@@ -2,6 +2,7 @@ import os
 import gc
 import pickle
 import logging
+import datetime
 
 import pandas as pd
 import lightgbm as lgb
@@ -14,21 +15,23 @@ logging.basicConfig(level=logging.DEBUG,
                     format='%(pathname)s %(asctime)s %(levelname)s %(message)s',)
 logger = logging.getLogger('train')
 
+LGB_PARAMS = {
+    'boosting_type': 'gbdt',
+    'objective': 'binary',
+    'metric': 'auc',
+    'nthread': 8,
+    'verbose': -1
+}
 
-def train(train_df, valid_df, params, max_rounds):
+def train(train_df, valid_df, params, max_rounds, learning_rates=None):
     # base parameters
-    lgb_params = {
-        'boosting_type': 'gbdt',
-        'objective': 'binary',
-        'metric': 'auc',
-        'nthread': 8,
-        'verbose': -1
-    }
-    
+    lgb_params = LGB_PARAMS.copy()
     lgb_params.update(params)    
     
-    features = ['app', 'channel', 'device', 'ip', 'os', 'hour']
-    logger.info(features)
+    target = 'is_attributed'
+    excluded = [] + [target]
+    features = [c for c in train_df.columns if c not in excluded]
+    logger.info('features: %s' % (' '.join(features)))
     
     logger.info("preparing dtrain")
     dtrain = lgb.Dataset(train_df[features], 
@@ -44,30 +47,58 @@ def train(train_df, valid_df, params, max_rounds):
     logger.info("starting train")
     m = lgb.train(lgb_params, 
                   dtrain,
-                  valid_sets=[dtrain, dvalid],
-                  valid_names=['train','valid'],
+                  valid_sets=[dvalid],
+                  valid_names=['valid'],
+                  #valid_sets=[dtrain, dvalid],
+                  #valid_names=['train','valid'],
                   evals_result=evals_results,
                   num_boost_round=max_rounds,
                   early_stopping_rounds=100,
+                  learning_rates=learning_rates,
                   verbose_eval=10)
     
-    n_estimators = m.best_iteration
-    print("\nModel Report")
-    print("n_estimators : ", n_estimators)
-    #print(metrics+":", evals_results['valid'][metrics][n_estimators-1])
+    print("n_estimators : ", m.best_iteration)
+    #print(metrics+":", evals_results['valid'][metrics][n_estimators-1])    
+    return m, evals_result
 
     
-    
-if __name__ == '__main__':
+def load():    
+    """ Load train + val + test df. 
+    """
     with open('train_test_base.pkl', 'rb') as f:
+        logger.info('loading base')
         df = pickle.load(f)        
+        df = df.reset_index(drop=True)
         assert len(df) == TRAIN_ROWS + TEST_ROWS
-       
-    categorical = ['app', 'channel', 'device', 'ip', 'os' ] #'hour'
+        
+    for extra in [
+        'train_test_ip-day-hour.pkl',
+        #'train_test_ip-app.pkl',
+        #'train_test_ip-app-os.pkl',
+        #'train_test_ip-device.pkl',
+        #'train_test_ip-device-channel.pkl'
+    ]: 
+        with open(extra, 'rb') as f:
+            logger.info('loading %s' % extra)
+            df2 = pickle.load(f)
+        for c in df2.columns:
+            df[c] = df2[c]
+        del df2
+        gc.collect()
+            
+    logger.info('done loading extra features.')
+    
+    df.drop(['ip', 'day'], axis=1, inplace=True)
+    categorical = ['app', 'channel', 'device', 'os', 'hour' ]
     
     # lgbm recognizes automatically if the column type is category
     for c in categorical:
         df[c] = df[c].astype('category')
+        
+    return df
+
+def load_splits():
+    df = load()
         
     logger.info(df.info())
     
@@ -79,24 +110,35 @@ if __name__ == '__main__':
     gc.collect()
     
     logger.info("train: %d, valid: %d" % (len(train_df), len(valid_df)))
-        
-    # from lgbm2.py (v2) -- [30]    train's auc: 0.967871   valid's auc: 0.957921
+    return train_df, valid_df, None
+
+def run_cv():
+    train_df, valid_df, _ = load_splits()
+
     params = {
-        'learning_rate': 0.1, 
-        'num_leaves': 63, 
+        'learning_rate': 0.1,
+        'num_leaves': 64, 
         'max_depth': -1,
         #'min_data_in_leaf': 1024,
-        'max_bin': 1024,
+        #'max_bin': 1024,
         #'min_data_in_bin': 100,
-        #'bagging_fraction': 0.8,
-        #'bagging_freq': 10,
+        #'bagging_fraction': 0.7,
+        #'bagging_freq': 5,        
         #'feature_fraction': 0.8,
-        'scale_pos_weight':99
+        'scale_pos_weight': 300
     }    
 
     max_rounds = 500
-    train(train_df, valid_df, params, max_rounds)
+    m, evals_result = train(train_df, 
+                            valid_df, 
+                            params, 
+                            max_rounds,
+                            learning_rates=lambda it: 0.1 if it < 60 else 0.5 ** (it//60))
+    
+    with open('cv-{}.pkl'.format(datetime.datetime.now().strftime("%Y%m%d%H%M%S")), 'wb') as f:
+        pickle.dump([m, evals_result, params], f)
+    
+    
+if __name__ == '__main__':
+    run_cv()
                 
-        
-    
-    

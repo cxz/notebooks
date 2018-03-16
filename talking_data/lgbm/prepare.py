@@ -11,6 +11,7 @@ import pickle
 import logging
 
 import pandas as pd
+import numpy as np
 
 BASE_PATH = '../input'
 TRAIN_CSV = os.path.join(BASE_PATH, 'train.csv')
@@ -53,7 +54,7 @@ def prepare_base(out_fname):
     
     print('len valid:', len(df[df.day==9]))
 
-    df.drop(['click_time', 'click_id', 'attributed_time', 'day'], axis=1, inplace=True)
+    df.drop(['click_time', 'click_id', 'attributed_time'], axis=1, inplace=True)
     
     logger.info(df.info())
 
@@ -62,6 +63,48 @@ def prepare_base(out_fname):
         
     logger.info('done.')
         
+def prepare_count(df, group, out_fname):
+    # column used to retrieve the count
+    helper = 'is_attributed'
+    
+    logger.info('building {}'.format(out_fname))
+    column_name = 'count-{}'.format('-'.join(group))
+    gp = df[group + [helper]].groupby(by=group)[[helper]].count().reset_index().rename(index=str, columns={helper: column_name})
+    gp[[column_name]] = gp[[column_name]].astype('uint16')
+    
+    logger.info('merge ')
+    df = df.merge(gp, on=group, how='left')
+    
+    logger.info('saving {}'.format(out_fname))
+    out_df = df[[column_name]]
+    with open(out_fname, 'wb') as f:
+        pickle.dump(out_df, f)
+    
 
+def run():
+    base_pkl = 'train_test_base.pkl'
+    if not os.path.exists(base_pkl):
+        prepare_base(base_pkl)
+    
+    with open(base_pkl, 'rb') as f:
+        df = pickle.load(f)
+        logger.info('loaded')
+        
+    for group in [
+            ['ip', 'app'],
+            ['ip', 'app', 'os'],            
+            ['ip', 'day', 'hour'],
+            ['ip', 'day', 'app'],
+            ['ip', 'day', 'os'],
+            ['ip', 'day', 'device'],
+            ['ip', 'day', 'channel'],
+            ['ip', 'device'],
+            ['ip', 'device', 'channel']
+        ]:    
+        feature_name = 'train_test_{}'.format('-'.join(group))
+        out_fname = "%s.pkl" % feature_name
+        if not os.path.exists(out_fname):
+            prepare_count(df, group, out_fname)
+    
 if __name__ == '__main__':
-    prepare_base('train_test_base.pkl')
+    run()
