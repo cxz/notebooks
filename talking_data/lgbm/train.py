@@ -1,11 +1,18 @@
+"""
+   
+
+"""
 import os
 import gc
 import pickle
 import logging
 import datetime
+import json
 
 import pandas as pd
+import numpy as np
 import lightgbm as lgb
+from hyperopt import hp, tpe, Trials, space_eval, fmin
 
 TRAIN_ROWS = 184903890
 VALID_ROWS = 53016937 # rows in train.csv with day == 2017-11-09             
@@ -22,6 +29,8 @@ LGB_PARAMS = {
     'nthread': 8,
     'verbose': -1
 }
+
+DEBUG = False
 
 def train(train_df, valid_df, params, max_rounds, learning_rates=None):
     # base parameters
@@ -45,6 +54,8 @@ def train(train_df, valid_df, params, max_rounds, learning_rates=None):
     evals_results = {}
 
     logger.info("starting train")
+    logger.info("parameters: {}".format(json.dumps(lgb_params)))
+    
     m = lgb.train(lgb_params, 
                   dtrain,
                   valid_sets=[dvalid],
@@ -53,13 +64,15 @@ def train(train_df, valid_df, params, max_rounds, learning_rates=None):
                   #valid_names=['train','valid'],
                   evals_result=evals_results,
                   num_boost_round=max_rounds,
-                  early_stopping_rounds=100,
+                  early_stopping_rounds=30,
                   learning_rates=learning_rates,
-                  verbose_eval=10)
+                  verbose_eval=1)
     
-    print("n_estimators : ", m.best_iteration)
-    #print(metrics+":", evals_results['valid'][metrics][n_estimators-1])    
-    return m, evals_result
+    best_auc = evals_results['valid'][LGB_PARAMS['metric']][m.best_iteration - 1]
+    logger.info("parameters: {}".format(json.dumps(lgb_params)))
+    logger.info("n_estimators : {}".format(m.best_iteration))
+    logger.info("auc : {}".format(best_auc))
+    return m, evals_results, best_auc
 
     
 def load():    
@@ -73,10 +86,10 @@ def load():
         
     for extra in [
         'train_test_ip-day-hour.pkl',
-        #'train_test_ip-app.pkl',
-        #'train_test_ip-app-os.pkl',
-        #'train_test_ip-device.pkl',
-        #'train_test_ip-device-channel.pkl'
+        'train_test_ip-app.pkl',
+        'train_test_ip-app-os.pkl',
+        'train_test_ip-device.pkl',
+        'train_test_ip-device-channel.pkl'
     ]: 
         with open(extra, 'rb') as f:
             logger.info('loading %s' % extra)
@@ -106,15 +119,44 @@ def load_splits():
     valid_df = df.iloc[TRAIN_ROWS-VALID_ROWS:TRAIN_ROWS, :]
     # test_df = df.iloc[-TEST_ROWS:]
     
+    #if DEBUG:
+    #    train_df = train_df[:1000]
+    #    valid_df = valid_df[:1000]
+    
     del df
     gc.collect()
     
     logger.info("train: %d, valid: %d" % (len(train_df), len(valid_df)))
     return train_df, valid_df, None
 
-def run_cv():
+def run_cv(params):
     train_df, valid_df, _ = load_splits()
+    
+    max_rounds = 1000
+    m, evals_result, best_auc = train(train_df, 
+                                      valid_df, 
+                                      params, 
+                                      max_rounds)
+                                      #learning_rates=lambda it: 0.1 if it < 80 else 0.5 ** (it//80))
+    
+    out = 'cv-{}-{}.pkl'.format(best_auc, datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+    with open(out, 'wb') as f:
+        pickle.dump([m, evals_result, params], f)
+        
+    return best_auc
+    
+    
+def hp_objective(params):
+    for p in ['max_depth', 'bagging_freq']: # , 'max_bin']: #
+        params[p] = int(params[p])
+        
+    # in lgbm, num_leaves tunned together with max_depth
+    params['num_leaves'] = int(2 ** params['max_depth'])
+    
+    auc = run_cv(params)
+    return -auc
 
+def run_cv_single():
     params = {
         'learning_rate': 0.1,
         'num_leaves': 64, 
@@ -126,19 +168,31 @@ def run_cv():
         #'bagging_freq': 5,        
         #'feature_fraction': 0.8,
         'scale_pos_weight': 300
-    }    
-
-    max_rounds = 500
-    m, evals_result = train(train_df, 
-                            valid_df, 
-                            params, 
-                            max_rounds,
-                            learning_rates=lambda it: 0.1 if it < 60 else 0.5 ** (it//60))
-    
-    with open('cv-{}.pkl'.format(datetime.datetime.now().strftime("%Y%m%d%H%M%S")), 'wb') as f:
-        pickle.dump([m, evals_result, params], f)
-    
+    }     
+    run_cv(params)
     
 if __name__ == '__main__':
-    run_cv()
+    #run_cv_single()
+    
+    space = {
+        'learning_rate': 0.1,
+        'scale_pos_weight': 300,        
+        'max_depth': hp.choice('max_depth', [5, 6, 7, 8, 9]),
+        'bagging_fraction': hp.quniform('bagging_fraction', 0.5, 1.0, 0.1),
+        'bagging_freq': hp.choice('bagging_freq', np.arange(1, 5)),
+        'feature_fraction': hp.quniform('feature_fraction', 0.7, 1.0, 0.1),
+        #'max_bin': hp.choice('max_bin', [255, 511, 1023])
+        #min_data_in_leaf
+        #min_data_in_bin
+    }
+    
+    best = fmin(hp_objective,
+                space=space,
+                algo=tpe.suggest,
+                max_evals=40, verbose=1)
+    logger.info("best {}".format(best))
+    best_params = space_eval(space, best)
+    logger.info("best params {}".format(best_params))
+    
+    
                 
