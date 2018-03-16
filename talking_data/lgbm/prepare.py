@@ -9,9 +9,14 @@ import os
 import gc
 import pickle
 import logging
+import datetime
+from csv import DictReader
+from functools import lru_cache
 
 import pandas as pd
 import numpy as np
+
+from tqdm import tqdm
 
 BASE_PATH = '../input'
 TRAIN_CSV = os.path.join(BASE_PATH, 'train.csv')
@@ -54,7 +59,7 @@ def prepare_base(out_fname):
     
     print('len valid:', len(df[df.day==9]))
 
-    df.drop(['click_time', 'click_id', 'attributed_time'], axis=1, inplace=True)
+    df.drop(['click_id', 'attributed_time'], axis=1, inplace=True)
     
     logger.info(df.info())
 
@@ -80,7 +85,61 @@ def prepare_count(df, group, out_fname):
     with open(out_fname, 'wb') as f:
         pickle.dump(out_df, f)
     
+def iter_all(paths):
+    for path in paths:
+        for t, row in tqdm(enumerate(DictReader(open(path)))):
+            yield row        
 
+@lru_cache(maxsize=None)    
+def parse_ts(txt):
+    fmt = "%Y-%m-%d %H:%M:%S"    
+    return datetime.datetime.strptime(txt, fmt)    
+
+def prepare_click_time_delta(df, group, out_fname):
+    """ Mean time between click_time for given group of features.
+    
+    Using pandas, it takes too long.
+    diff = df.groupby(group) \
+        .click_time \
+        .apply(lambda x: x.sort_values().diff().dt.total_seconds()) \
+        .fillna(-1) \
+        .sort_index() \
+        .reset_index(level=1, drop=True) \
+        .reset_index(name='click_time_diff')
+    
+    """
+    logger.info('building {}'.format(out_fname))
+    column_name = 'delta-{}'.format('-'.join(group))
+            
+    # store last click by given group
+    last_click = {}
+    
+    out = []
+    
+    #assuming input csv are ordered by click_time.
+    for row in iter_all([TRAIN_CSV, TEST_CSV]):
+        k = tuple([row[g] for g in group])
+        prev = last_click.get(k, -1)
+        curr = parse_ts(row['click_time'])
+        if prev != -1:
+            delta = curr - prev
+            out.append(delta.total_seconds())            
+        else:
+            out.append(-1)
+        last_click[k] = curr
+        
+    diff = pd.DataFrame(out, columns=[column_name])    
+    diff = diff.astype(np.float16)
+        
+    #logger.info('merging ')
+    #df = df.merge(gp, on=group, how='left')
+    
+    logger.info('saving {}'.format(out_fname))
+    out_df = diff
+    with open(out_fname, 'wb') as f:
+        pickle.dump(out_df, f)
+    
+    
 def run():
     base_pkl = 'train_test_base.pkl'
     if not os.path.exists(base_pkl):
@@ -105,6 +164,15 @@ def run():
         out_fname = "%s.pkl" % feature_name
         if not os.path.exists(out_fname):
             prepare_count(df, group, out_fname)
+            
+    for group in [
+            ['ip', 'app', 'device', 'os'],
+            ['ip', 'device', 'os'],            
+        ]:
+        feature_name = 'delta_{}'.format('-'.join(group))
+        out_fname = '%s.pkl' % feature_name
+        if not os.path.exists(out_fname):
+            prepare_click_time_delta(df, group, out_fname)
     
 if __name__ == '__main__':
     run()
