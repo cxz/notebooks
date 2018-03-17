@@ -1,7 +1,8 @@
 """
-   
+       LightGBM training.
 
 """
+
 import os
 import gc
 import pickle
@@ -89,7 +90,9 @@ def load():
         'train_test_ip-app.pkl',
         'train_test_ip-app-os.pkl',
         'train_test_ip-device.pkl',
-        'train_test_ip-device-channel.pkl'
+        'train_test_ip-device-channel.pkl',
+        'delta_ip-device-os.pkl',
+        'delta_ip-app-device-os.pkl'
     ]: 
         with open(extra, 'rb') as f:
             logger.info('loading %s' % extra)
@@ -101,7 +104,7 @@ def load():
             
     logger.info('done loading extra features.')
     
-    df.drop(['ip', 'day'], axis=1, inplace=True)
+    df.drop(['click_time', 'ip', 'day'], axis=1, inplace=True)
     categorical = ['app', 'channel', 'device', 'os', 'hour' ]
     
     # lgbm recognizes automatically if the column type is category
@@ -147,7 +150,7 @@ def run_cv(params):
     
     
 def hp_objective(params):
-    for p in ['max_depth', 'bagging_freq']: # , 'max_bin']: #
+    for p in ['max_depth', 'bagging_freq', 'min_data_in_leaf']: # , 'max_bin']: #
         params[p] = int(params[p])
         
     # in lgbm, num_leaves tunned together with max_depth
@@ -157,6 +160,8 @@ def hp_objective(params):
     return -auc
 
 def run_cv_single():
+    """ Single run using cross validation.
+    """
     params = {
         'learning_rate': 0.1,
         'num_leaves': 64, 
@@ -171,18 +176,34 @@ def run_cv_single():
     }     
     run_cv(params)
     
-if __name__ == '__main__':
-    #run_cv_single()
+def run_cv_single2():
+    # previous best auc was 0.97267
+    # [179]    valid's auc: 0.973303 (same parameters + delta* features)
+    params = {
+        'learning_rate': 0.1,
+        'num_leaves': 128, 
+        'max_depth': 7,
+        'bagging_fraction': 0.8,
+        'bagging_freq': 1, 
+        'feature_fraction': 0.7,
+        'scale_pos_weight': 300
+    }     
+    run_cv(params)    
+    
+def run_hp_search():    
+    """ Hyperparameters search.
+    """
     
     space = {
         'learning_rate': 0.1,
         'scale_pos_weight': 300,        
-        'max_depth': hp.choice('max_depth', [5, 6, 7, 8, 9]),
+        'max_depth': 7,
+        #'max_depth': hp.choice('max_depth', [5, 6, 7, 8, 9]),
         'bagging_fraction': hp.quniform('bagging_fraction', 0.5, 1.0, 0.1),
         'bagging_freq': hp.choice('bagging_freq', np.arange(1, 5)),
         'feature_fraction': hp.quniform('feature_fraction', 0.7, 1.0, 0.1),
         #'max_bin': hp.choice('max_bin', [255, 511, 1023])
-        #min_data_in_leaf
+        'min_data_in_leaf': hp.quniform('min_data_in_leaf', 500, 5000, 500),
         #min_data_in_bin
     }
     
@@ -193,6 +214,12 @@ if __name__ == '__main__':
     logger.info("best {}".format(best))
     best_params = space_eval(space, best)
     logger.info("best params {}".format(best_params))
+    
+if __name__ == '__main__':
+    #run_cv_single()
+    run_hp_search()
+    #run_cv_single2()
+    
     
     
                 
