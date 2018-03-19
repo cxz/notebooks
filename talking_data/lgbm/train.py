@@ -85,7 +85,7 @@ def train(train_df, valid_df, params, max_rounds, learning_rates=None):
     return m, evals_results, None
 
 def run_cv(params):
-    train_df, valid_df, _ = data.load_train_val_splits()
+    train_df, valid_df, _ = data.load_train_val_splits(use_validation=True)
     
     max_rounds = 1000
     m, evals_result, best_auc = train(train_df, 

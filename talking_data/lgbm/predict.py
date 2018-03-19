@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger('test')
 
 def load_model():
-    with open('model-20180319035439.pkl', 'rb') as f:
+    with open('../tmp/model-20180319035439.pkl', 'rb') as f:
         m, _, _ = pickle.load(f)        
     return m
 
@@ -33,7 +33,8 @@ def run(out_csv, num_iteration=-1):
     m = load_model()
     preds = m.predict(dtest, num_iteration=num_iteration)
 
-    mapping = pd.read_csv('test_mapping.csv')
+    # generated using map_clickid.ipynb
+    mapping = pd.read_csv('../cache/test_mapping.csv')
     print('len before: ', len(mapping))
 
     mapping = mapping.drop_duplicates(subset=['click_id'])

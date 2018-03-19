@@ -14,6 +14,8 @@ TEST_ROWS_V0 = 57537505
 TEST_ROWS = 18790469
 CACHE = '../cache'
 
+logger = logging.getLogger('')
+
 def load():    
     """ Load train + val + test df. 
     """
@@ -67,17 +69,28 @@ def load():
     return df
 
 
-def load_train_val_splits(use_validation=False):
+def load_sample():
     df = load()
         
     logger.info(df.info())
 
-    if DEBUG:
-        valid_rows = 10000000
-        train_rows = 50000000
-        train_df = df.iloc[TRAIN_ROWS-train_rows-valid_rows:TRAIN_ROWS-valid_rows, :]
-        valid_df = df.iloc[TRAIN_ROWS-valid_rows:TRAIN_ROWS, :]        
+    valid_rows = 10000000
+    train_rows = 50000000
+    train_df = df.iloc[TRAIN_ROWS-train_rows-valid_rows:TRAIN_ROWS-valid_rows, :]
+    valid_df = df.iloc[TRAIN_ROWS-valid_rows:TRAIN_ROWS, :]        
+
+    del df
+    gc.collect()
     
+    logger.info("train: %d, valid: %d" % (len(train_df), len(valid_df)))
+    return train_df, valid_df, test_df
+
+
+def load_train_val_splits(use_validation=True):
+    df = load()
+        
+    logger.info(df.info())
+
     if use_validation:
         train_df = df.iloc[:TRAIN_ROWS-VALID_ROWS, :]
         valid_df = df.iloc[TRAIN_ROWS-VALID_ROWS:TRAIN_ROWS, :]
@@ -87,7 +100,6 @@ def load_train_val_splits(use_validation=False):
     else:
         train_df = df.iloc[:TRAIN_ROWS, :]
         valid_df = []
-        # test_df = df.iloc[-TEST_ROWS_V0:]
         test_df = None
 
     del df
