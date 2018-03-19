@@ -17,7 +17,9 @@ from hyperopt import hp, tpe, Trials, space_eval, fmin
 
 TRAIN_ROWS = 184903890
 VALID_ROWS = 53016937 # rows in train.csv with day == 2017-11-09             
+TEST_ROWS_V0 = 57537505
 TEST_ROWS = 18790469
+CACHE = '../cache'
 
 logging.basicConfig(level=logging.DEBUG, 
                     format='%(pathname)s %(asctime)s %(levelname)s %(message)s',)
@@ -79,22 +81,37 @@ def train(train_df, valid_df, params, max_rounds, learning_rates=None):
 def load():    
     """ Load train + val + test df. 
     """
-    with open('train_test_base.pkl', 'rb') as f:
+    with open(os.path.join(CACHE, 'train_test_base.pkl'), 'rb') as f:
         logger.info('loading base')
         df = pickle.load(f)        
         df = df.reset_index(drop=True)
-        assert len(df) == TRAIN_ROWS + TEST_ROWS
+        assert len(df) == TRAIN_ROWS + TEST_ROWS_V0, \
+            "%d %d" %(len(df), TRAIN_ROWS + TEST_ROWS_V0)
         
     for extra in [
-        'train_test_ip-day-hour.pkl',
-        'train_test_ip-app.pkl',
-        'train_test_ip-app-os.pkl',
-        'train_test_ip-device.pkl',
-        'train_test_ip-device-channel.pkl',
-        'delta_ip-device-os.pkl',
-        'delta_ip-app-device-os.pkl'
+        'count_ip-app-os.pkl',
+        'count_ip-app.pkl',
+        'count_ip-channel.pkl',
+        'count_ip-day-app.pkl',
+        'count_ip-day-channel.pkl',
+        'count_ip-day-device.pkl',
+        'count_ip-day-hour.pkl',
+        'count_ip-day-os.pkl',
+        'count_ip-device-channel.pkl',
+        'count_ip-device.pkl',
+        'count_ip-os.pkl',
+        'count_os-device-app.pkl',
+        'count_os-device-channel.pkl',
+        'delta_ip-app.pkl',
+        'delta_ip-device-app.pkl',
+        'delta_ip-device-channel.pkl',
+        'delta_ip-device-os-app.pkl',
+        'delta_ip-device-os.pkl'        
+        #'delta_rev_ip-device.pkl',
+        #'delta_rev_ip-device-app.pkl',
+        #'delta_rev_ip-device-channel.pkl'
     ]: 
-        with open(extra, 'rb') as f:
+        with open(os.path.join(CACHE, extra), 'rb') as f:
             logger.info('loading %s' % extra)
             df2 = pickle.load(f)
         for c in df2.columns:
@@ -177,15 +194,29 @@ def run_cv_single():
     run_cv(params)
     
 def run_cv_single2():
-    # previous best auc was 0.97267
-    # [179]    valid's auc: 0.973303 (same parameters + delta* features)
+    """
+        [176]   valid's auc: 0.973569
+        train.py 2018-03-18 00:20:23,476 INFO parameters: {"boosting_type": "gbdt", "objective": "binary", "metric": "auc", "nthread": 8, "verbose": -1, "learning_rate": 0.1, "num_leaves": 128, "max_depth": 7, "bagging_fraction": 1.0, "bagging_freq": 2, "feature_fraction": 0.8, "scale_pos_weight": 300, "categorical_column": [0, 1, 2, 3, 4]}
+        
+        'train_test_ip-day-hour.pkl',
+        'train_test_ip-day-app.pkl',
+        'train_test_ip-day-os.pkl',
+        'train_test_ip-day-device.pkl',
+        'train_test_ip-day-channel.pkl',
+        'train_test_ip-device.pkl',
+        'train_test_ip-app.pkl',
+        'train_test_ip-app-os.pkl',
+        'train_test_ip-device-channel.pkl',
+        'delta_ip-device-os.pkl',
+        'delta_ip-app-device-os.pkl',
+    """
     params = {
         'learning_rate': 0.1,
         'num_leaves': 128, 
         'max_depth': 7,
-        'bagging_fraction': 0.8,
-        'bagging_freq': 1, 
-        'feature_fraction': 0.7,
+        'bagging_fraction': 1.0,
+        'bagging_freq': 2, 
+        'feature_fraction': 0.8,
         'scale_pos_weight': 300
     }     
     run_cv(params)    
@@ -217,8 +248,8 @@ def run_hp_search():
     
 if __name__ == '__main__':
     #run_cv_single()
-    run_hp_search()
-    #run_cv_single2()
+    #run_hp_search()
+    run_cv_single2()
     
     
     
