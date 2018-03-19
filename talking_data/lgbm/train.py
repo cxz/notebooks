@@ -15,11 +15,7 @@ import numpy as np
 import lightgbm as lgb
 from hyperopt import hp, tpe, Trials, space_eval, fmin
 
-TRAIN_ROWS = 184903890
-VALID_ROWS = 53016937 # rows in train.csv with day == 2017-11-09             
-TEST_ROWS_V0 = 57537505
-TEST_ROWS = 18790469
-CACHE = '../cache'
+import data
 
 logging.basicConfig(level=logging.DEBUG, 
                     format='%(pathname)s %(asctime)s %(levelname)s %(message)s',)
@@ -88,90 +84,8 @@ def train(train_df, valid_df, params, max_rounds, learning_rates=None):
         logger.info("auc : {}".format(best_auc))
     return m, evals_results, None
 
-    
-def load():    
-    """ Load train + val + test df. 
-    """
-    with open(os.path.join(CACHE, 'train_test_base.pkl'), 'rb') as f:
-        logger.info('loading base')
-        df = pickle.load(f)        
-        df = df.reset_index(drop=True)
-        assert len(df) == TRAIN_ROWS + TEST_ROWS_V0, \
-            "%d %d" %(len(df), TRAIN_ROWS + TEST_ROWS_V0)
-        
-    for extra in [
-        'count_ip-app-os.pkl',
-        'count_ip-app.pkl',
-        'count_ip-channel.pkl',
-        'count_ip-day-app.pkl',
-        'count_ip-day-channel.pkl',
-        'count_ip-day-device.pkl',
-        'count_ip-day-hour.pkl',
-        'count_ip-day-os.pkl',
-        'count_ip-device-channel.pkl',
-        'count_ip-device.pkl',
-        'count_ip-os.pkl',
-        'count_os-device-app.pkl',
-        'count_os-device-channel.pkl',
-        'delta_ip-app.pkl',
-        'delta_ip-device-app.pkl',
-        'delta_ip-device-channel.pkl',
-        'delta_ip-device-os-app.pkl',
-        'delta_ip-device-os.pkl'        
-        #'delta_rev_ip-device.pkl',
-        #'delta_rev_ip-device-app.pkl',
-        #'delta_rev_ip-device-channel.pkl'
-    ]: 
-        with open(os.path.join(CACHE, extra), 'rb') as f:
-            logger.info('loading %s' % extra)
-            df2 = pickle.load(f)
-        for c in df2.columns:
-            df[c] = df2[c]
-        del df2
-        gc.collect()
-            
-    logger.info('done loading extra features.')
-    
-    df.drop(['click_time', 'ip', 'day'], axis=1, inplace=True)
-    categorical = ['app', 'channel', 'device', 'os', 'hour' ]
-    
-    # lgbm recognizes automatically if the column type is category
-    for c in categorical:
-        df[c] = df[c].astype('category')
-        
-    return df
-
-def load_splits(use_validation=False):
-    df = load()
-        
-    logger.info(df.info())
-
-    if DEBUG:
-        valid_rows = 10000000
-        train_rows = 50000000
-        train_df = df.iloc[TRAIN_ROWS-train_rows-valid_rows:TRAIN_ROWS-valid_rows, :]
-        valid_df = df.iloc[TRAIN_ROWS-valid_rows:TRAIN_ROWS, :]        
-    
-    if use_validation:
-        train_df = df.iloc[:TRAIN_ROWS-VALID_ROWS, :]
-        valid_df = df.iloc[TRAIN_ROWS-VALID_ROWS:TRAIN_ROWS, :]
-        # test_df = df.iloc[-TEST_ROWS_V0:]
-        test_df = None        
-        
-    else:
-        train_df = df.iloc[:TRAIN_ROWS, :]
-        valid_df = []
-        # test_df = df.iloc[-TEST_ROWS_V0:]
-        test_df = None
-
-    del df
-    gc.collect()
-    
-    logger.info("train: %d, valid: %d" % (len(train_df), len(valid_df)))
-    return train_df, valid_df, test_df
-
 def run_cv(params):
-    train_df, valid_df, _ = load_splits()
+    train_df, valid_df, _ = data.load_train_val_splits()
     
     max_rounds = 1000
     m, evals_result, best_auc = train(train_df, 
@@ -283,7 +197,7 @@ def run_train_full():
         'feature_fraction': 0.8,
         'scale_pos_weight': 300
     }     
-    train_df, _, _ = load_splits(use_validation=False)
+    train_df, _, _ = data.load_train_val_splits(use_validation=False)
     
     rounds = 150
     m, evals_result, best_auc = train(train_df, 
