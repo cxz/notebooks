@@ -49,10 +49,22 @@ def train(train_df, valid_df, params, max_rounds, learning_rates=None):
     dtrain = lgb.Dataset(train_df[features], 
                          label=train_df['is_attributed'].values)
     
-    logger.info("preparing dvalid")
-    dvalid = lgb.Dataset(valid_df[features], 
-                         label=valid_df['is_attributed'].values,
-                         reference=dtrain)
+    use_validation = valid_df is not None
+    valid_sets = []
+    valid_names = []
+    
+    if use_validation:
+        logger.info("preparing dvalid")
+        dvalid = lgb.Dataset(valid_df[features], 
+                             label=valid_df['is_attributed'].values,
+                             reference=dtrain)
+        valid_sets = [dvalid]
+        valid_names = ['valid']
+        early_stopping_rounds = 30
+    else:
+        valid_sets = [dtrain]
+        valid_names = ['train']
+        early_stopping_rounds = None
                           
     evals_results = {}
 
@@ -61,21 +73,20 @@ def train(train_df, valid_df, params, max_rounds, learning_rates=None):
     
     m = lgb.train(lgb_params, 
                   dtrain,
-                  valid_sets=[dvalid],
-                  valid_names=['valid'],
-                  #valid_sets=[dtrain, dvalid],
-                  #valid_names=['train','valid'],
+                  valid_sets=valid_sets,
+                  valid_names=valid_names,
                   evals_result=evals_results,
                   num_boost_round=max_rounds,
-                  early_stopping_rounds=30,
+                  early_stopping_rounds=early_stopping_rounds,
                   learning_rates=learning_rates,
                   verbose_eval=1)
-    
-    best_auc = evals_results['valid'][LGB_PARAMS['metric']][m.best_iteration - 1]
+        
     logger.info("parameters: {}".format(json.dumps(lgb_params)))
     logger.info("n_estimators : {}".format(m.best_iteration))
-    logger.info("auc : {}".format(best_auc))
-    return m, evals_results, best_auc
+    if use_validation:
+        best_auc = evals_results['valid'][LGB_PARAMS['metric']][m.best_iteration - 1]
+        logger.info("auc : {}".format(best_auc))
+    return m, evals_results, None
 
     
 def load():    
@@ -130,24 +141,34 @@ def load():
         
     return df
 
-def load_splits():
+def load_splits(use_validation=False):
     df = load()
         
     logger.info(df.info())
+
+    if DEBUG:
+        valid_rows = 10000000
+        train_rows = 50000000
+        train_df = df.iloc[TRAIN_ROWS-train_rows-valid_rows:TRAIN_ROWS-valid_rows, :]
+        valid_df = df.iloc[TRAIN_ROWS-valid_rows:TRAIN_ROWS, :]        
     
-    train_df = df.iloc[:TRAIN_ROWS-VALID_ROWS, :]
-    valid_df = df.iloc[TRAIN_ROWS-VALID_ROWS:TRAIN_ROWS, :]
-    # test_df = df.iloc[-TEST_ROWS:]
-    
-    #if DEBUG:
-    #    train_df = train_df[:1000]
-    #    valid_df = valid_df[:1000]
-    
+    if use_validation:
+        train_df = df.iloc[:TRAIN_ROWS-VALID_ROWS, :]
+        valid_df = df.iloc[TRAIN_ROWS-VALID_ROWS:TRAIN_ROWS, :]
+        # test_df = df.iloc[-TEST_ROWS_V0:]
+        test_df = None        
+        
+    else:
+        train_df = df.iloc[:TRAIN_ROWS, :]
+        valid_df = []
+        # test_df = df.iloc[-TEST_ROWS_V0:]
+        test_df = None
+
     del df
     gc.collect()
     
     logger.info("train: %d, valid: %d" % (len(train_df), len(valid_df)))
-    return train_df, valid_df, None
+    return train_df, valid_df, test_df
 
 def run_cv(params):
     train_df, valid_df, _ = load_splits()
@@ -160,6 +181,9 @@ def run_cv(params):
                                       #learning_rates=lambda it: 0.1 if it < 80 else 0.5 ** (it//80))
     
     out = 'cv-{}-{}.pkl'.format(best_auc, datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+    if DEBUG:
+        out = "debug-%s" % out
+    
     with open(out, 'wb') as f:
         pickle.dump([m, evals_result, params], f)
         
@@ -219,8 +243,9 @@ def run_cv_single2():
         'feature_fraction': 0.8,
         'scale_pos_weight': 300
     }     
-    run_cv(params)    
+    run_cv(params)   
     
+        
 def run_hp_search():    
     """ Hyperparameters search.
     """
@@ -246,10 +271,39 @@ def run_hp_search():
     best_params = space_eval(space, best)
     logger.info("best params {}".format(best_params))
     
+def run_train_full():
+    """
+    """
+    params = {
+        'learning_rate': 0.1,
+        'num_leaves': 128, 
+        'max_depth': 7,
+        'bagging_fraction': 1.0,
+        'bagging_freq': 2, 
+        'feature_fraction': 0.8,
+        'scale_pos_weight': 300
+    }     
+    train_df, _, _ = load_splits(use_validation=False)
+    
+    rounds = 150
+    m, evals_result, best_auc = train(train_df, 
+                                      None, 
+                                      params, 
+                                      rounds)
+                                          
+    out = 'model-{}.pkl'.format(datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+    
+    with open(out, 'wb') as f:
+        pickle.dump([m, evals_result, params], f)
+        
+    return best_auc
+
+    
 if __name__ == '__main__':
     #run_cv_single()
     #run_hp_search()
-    run_cv_single2()
+    #run_cv_single2()
+    run_train_full()
     
     
     
