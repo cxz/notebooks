@@ -199,7 +199,7 @@ def run_train_full():
     }     
     train_df, _, _ = data.load_train_val_splits(use_validation=False)
     
-    rounds = 150
+    rounds = 200
     m, evals_result, best_auc = train(train_df, 
                                       None, 
                                       params, 
@@ -213,11 +213,41 @@ def run_train_full():
     return best_auc
 
     
+def run_cv3_robust_ips():
+    train_df, valid_df, _ = data.load_train_val_splits2()
+
+    params = {
+        'learning_rate': 0.1,
+        'num_leaves': 128, 
+        'max_depth': 7,
+        'bagging_fraction': 1.0,
+        'bagging_freq': 2, 
+        'feature_fraction': 0.8,
+        'scale_pos_weight': 300
+    } 
+    
+    max_rounds = 1000
+    m, evals_result, best_auc = train(train_df, 
+                                      valid_df, 
+                                      params, 
+                                      max_rounds)
+                                      #learning_rates=lambda it: 0.1 if it < 80 else 0.5 ** (it//80))
+    
+    out = 'cv-{}-{}.pkl'.format(best_auc, datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+    if DEBUG:
+        out = "debug-%s" % out
+    
+    with open(out, 'wb') as f:
+        pickle.dump([m, evals_result, params], f)
+        
+    return best_auc
+
 if __name__ == '__main__':
     #run_cv_single()
     #run_hp_search()
     #run_cv_single2()
     run_train_full()
+    #run_cv3_robust_ips()
     
     
     

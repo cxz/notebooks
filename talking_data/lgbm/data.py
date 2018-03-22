@@ -44,10 +44,13 @@ def load():
         'delta_ip-device-app.pkl',
         'delta_ip-device-channel.pkl',
         'delta_ip-device-os-app.pkl',
-        'delta_ip-device-os.pkl'        
+        'delta_ip-device-os.pkl',
         #'delta_rev_ip-device.pkl',
         #'delta_rev_ip-device-app.pkl',
         #'delta_rev_ip-device-channel.pkl'
+        'count_hour-app.pkl',
+        'count_hour-device.pkl',
+        'count_hour-channel.pkl',
     ]: 
         with open(os.path.join(CACHE, extra), 'rb') as f:
             logger.info('loading %s' % extra)
@@ -58,6 +61,7 @@ def load():
         gc.collect()
             
     logger.info('done loading extra features.')
+    ips = df[['ip']].values
     
     df.drop(['click_time', 'ip', 'day'], axis=1, inplace=True)
     categorical = ['app', 'channel', 'device', 'os', 'hour' ]
@@ -66,11 +70,11 @@ def load():
     for c in categorical:
         df[c] = df[c].astype('category')
         
-    return df
+    return df, ips
 
 
 def load_sample():
-    df = load()
+    df, _ = load()
         
     logger.info(df.info())
 
@@ -87,7 +91,7 @@ def load_sample():
 
 
 def load_train_val_splits(use_validation=True):
-    df = load()
+    df, _ = load()
         
     logger.info(df.info())
 
@@ -108,12 +112,48 @@ def load_train_val_splits(use_validation=True):
     logger.info("train: %d, valid: %d" % (len(train_df), len(valid_df)))
     return train_df, valid_df, test_df
 
+def load_train_val_splits2():
+    """ No common ips between train & val sets
+    """
+    df, ips = load()        
+    logger.info(df.info())
+    
+    #with open('../cache/ip_mapping.pkl', 'rb') as f:
+    #    mapped, _, _, _ = pickle.load(f)
+        
+    #assert len(ips) == len(mapped), 
+    #    'len(ips)==%d, len(mapped)==%d' %(len(ips), len(mapped))
+
+    # reserve ips for val set
+    ips = np.array(ips)
+    val_ips = ips[TRAIN_ROWS-VALID_ROWS:TRAIN_ROWS]
+    unique_val_ips = np.unique(val_ips)
+    logger.info("unique val ips: %d" % len(unique_val_ips))
+    
+    sample_size = int(len(unique_val_ips) * 0.1)
+    val_ips = np.random.choice(unique_val_ips, size=(sample_size,), replace=False)
+    logger.info("selected val ips: %d" % len(val_ips))
+        
+    # exclude reserved ips from train set
+    val_idx = np.isin(ips[TRAIN_ROWS-VALID_ROWS:TRAIN_ROWS], val_ips)
+    train_idx = ~np.isin(ips[:TRAIN_ROWS-VALID_ROWS], val_ips)
+
+    train_df = df.iloc[:TRAIN_ROWS-VALID_ROWS, :]
+    train_df = train_df.iloc[train_idx.ravel(), :]
+
+    valid_df = df.iloc[TRAIN_ROWS-VALID_ROWS:TRAIN_ROWS, :]
+    valid_df = valid_df.iloc[val_idx.ravel(), :]
+
+    logger.info("train: %d, valid: %d" % (len(train_df), len(valid_df)))
+    return train_df, valid_df, None
+    
+
 def load_click_ids():
     click_ids = pd.read_csv('../input/test_v0.csv', usecols=['click_id']).click_id.values
     return click_ids
 
 def load_test_split():
-    df = load()
+    df, _ = load()
         
     logger.info(df.info())
 
