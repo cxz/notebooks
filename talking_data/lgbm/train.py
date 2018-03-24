@@ -31,13 +31,17 @@ LGB_PARAMS = {
 
 DEBUG = False
 
-def train(train_df, valid_df, params, max_rounds, learning_rates=None):
+def train(train_df, valid_df, 
+          params, 
+          max_rounds, 
+          excluded_features=[],
+          learning_rates=None):
     # base parameters
     lgb_params = LGB_PARAMS.copy()
     lgb_params.update(params)    
     
     target = 'is_attributed'
-    excluded = [] + [target]
+    excluded = excluded_features + [target]
     features = [c for c in train_df.columns if c not in excluded]
     logger.info('features: %s' % (' '.join(features)))
     
@@ -54,8 +58,8 @@ def train(train_df, valid_df, params, max_rounds, learning_rates=None):
         dvalid = lgb.Dataset(valid_df[features], 
                              label=valid_df['is_attributed'].values,
                              reference=dtrain)
-        valid_sets = [dvalid]
-        valid_names = ['valid']
+        valid_sets = [dtrain, dvalid]
+        valid_names = ['train', 'valid']
         early_stopping_rounds = 30
     else:
         valid_sets = [dtrain]
@@ -198,6 +202,8 @@ def run_train_full():
         'scale_pos_weight': 300
     }     
     train_df, _, _ = data.load_train_val_splits(use_validation=False)
+    #train_df = train_df.iloc[-100000000:, :]
+    
     
     rounds = 200
     m, evals_result, best_auc = train(train_df, 
@@ -212,9 +218,26 @@ def run_train_full():
         
     return best_auc
 
-    
+
 def run_cv3_robust_ips():
-    train_df, valid_df, _ = data.load_train_val_splits2()
+    """
+    train.py 2018-03-22 08:39:41,244 INFO n_estimators : 126
+    train.py 2018-03-22 08:39:41,245 INFO auc : 0.9724334971449692
+
+    train.py 2018-03-22 09:32:13,914 INFO n_estimators : 167
+    train.py 2018-03-22 09:32:13,915 INFO auc : 0.9736978105997677
+
+
+    train.py 2018-03-22 13:30:27,069 INFO n_estimators : 208
+    train.py 2018-03-22 13:30:27,069 INFO auc : 0.974605888768868
+    
+    //.975 for full validation+train set train_val_splits().
+    """
+    
+    train_df, valid_df, _ = data.load_train_val_splits()
+    
+    #train_df, valid_df, _ = data.load_train_val_splits2(common=False)
+    #train_df = train_df.iloc[-50000000:, :] #TODO: remove
 
     params = {
         'learning_rate': 0.1,
@@ -230,8 +253,12 @@ def run_cv3_robust_ips():
     m, evals_result, best_auc = train(train_df, 
                                       valid_df, 
                                       params, 
-                                      max_rounds)
+                                      max_rounds,
                                       #learning_rates=lambda it: 0.1 if it < 80 else 0.5 ** (it//80))
+                                      excluded_features=[
+                                          'device'
+                                      ])
+                                                      
     
     out = 'cv-{}-{}.pkl'.format(best_auc, datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
     if DEBUG:
@@ -246,8 +273,8 @@ if __name__ == '__main__':
     #run_cv_single()
     #run_hp_search()
     #run_cv_single2()
-    run_train_full()
-    #run_cv3_robust_ips()
+    #run_train_full()
+    run_cv3_robust_ips()
     
     
     

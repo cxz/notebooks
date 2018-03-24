@@ -17,7 +17,7 @@ logging.basicConfig(level=logging.DEBUG,
 logger = logging.getLogger('test')
 
 def load_model():
-    with open('../tmp/model-20180319035439.pkl', 'rb') as f:
+    with open('model-20180322031037.pkl', 'rb') as f:
         m, _, _ = pickle.load(f)        
     return m
 
@@ -58,6 +58,6 @@ def run(out_csv, num_iteration=-1):
     subm[['click_id', 'is_attributed']].to_csv(out_csv, index=False)
 
 if __name__ == '__main__':
-    num_iteration = -1
-    out_csv = '../tmp/submxx.csv'
+    num_iteration = 180
+    out_csv = '../tmp/submxx180.csv'
     run(out_csv, num_iteration)

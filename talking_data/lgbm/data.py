@@ -35,22 +35,28 @@ def load():
         'count_ip-day-device.pkl',
         'count_ip-day-hour.pkl',
         'count_ip-day-os.pkl',
+        'count_ip-hour-device.pkl',
+        #'count_ip-hour-channel.pkl',
+        'count_ip-hour-app.pkl',
+        'count_ip-hour-os.pkl',
         'count_ip-device-channel.pkl',
         'count_ip-device.pkl',
         'count_ip-os.pkl',
         'count_os-device-app.pkl',
         'count_os-device-channel.pkl',
-        'delta_ip-app.pkl',
-        'delta_ip-device-app.pkl',
+        #'delta_ip-app.pkl',
+        #'delta_ip-device-app.pkl',
         'delta_ip-device-channel.pkl',
         'delta_ip-device-os-app.pkl',
-        'delta_ip-device-os.pkl',
+        #'delta_ip-device-os.pkl',
         #'delta_rev_ip-device.pkl',
         #'delta_rev_ip-device-app.pkl',
         #'delta_rev_ip-device-channel.pkl'
         'count_hour-app.pkl',
         'count_hour-device.pkl',
         'count_hour-channel.pkl',
+        #'cps_app.pkl',
+        #'cps_app-channel.pkl',
     ]: 
         with open(os.path.join(CACHE, extra), 'rb') as f:
             logger.info('loading %s' % extra)
@@ -59,12 +65,16 @@ def load():
             df[c] = df2[c]
         del df2
         gc.collect()
+        
+    #with open('../cache/ip_mapping.pkl', 'rb') as f:
+    #    mapped, _, _, _ = pickle.load(f)
+    #    mapped = np.array(mapped)
             
     logger.info('done loading extra features.')
     ips = df[['ip']].values
     
     df.drop(['click_time', 'ip', 'day'], axis=1, inplace=True)
-    categorical = ['app', 'channel', 'device', 'os', 'hour' ]
+    categorical = ['app', 'channel', 'device', 'os', 'hour']
     
     # lgbm recognizes automatically if the column type is category
     for c in categorical:
@@ -112,32 +122,40 @@ def load_train_val_splits(use_validation=True):
     logger.info("train: %d, valid: %d" % (len(train_df), len(valid_df)))
     return train_df, valid_df, test_df
 
-def load_train_val_splits2():
+def load_train_val_splits2(common=False):
     """ No common ips between train & val sets
     """
     df, ips = load()        
     logger.info(df.info())
     
-    #with open('../cache/ip_mapping.pkl', 'rb') as f:
-    #    mapped, _, _, _ = pickle.load(f)
+    with open('../cache/ip_mapping.pkl', 'rb') as f:
+        mapped, _, _, _ = pickle.load(f)
+        mapped = np.array(mapped)
         
     #assert len(ips) == len(mapped), 
     #    'len(ips)==%d, len(mapped)==%d' %(len(ips), len(mapped))
 
     # reserve ips for val set
     ips = np.array(ips)
-    val_ips = ips[TRAIN_ROWS-VALID_ROWS:TRAIN_ROWS]
+    val_ips = ips[mapped==3]  # ips in common between trani & test
+    #val_ips = ips[TRAIN_ROWS-VALID_ROWS:TRAIN_ROWS]
+    
+    
+    #val_ips = ips[TRAIN_ROWS-VALID_ROWS:TRAIN_ROWS]
     unique_val_ips = np.unique(val_ips)
     logger.info("unique val ips: %d" % len(unique_val_ips))
     
-    sample_size = int(len(unique_val_ips) * 0.1)
+    sample_size = int(len(unique_val_ips) * 0.5)
     val_ips = np.random.choice(unique_val_ips, size=(sample_size,), replace=False)
     logger.info("selected val ips: %d" % len(val_ips))
         
     # exclude reserved ips from train set
     val_idx = np.isin(ips[TRAIN_ROWS-VALID_ROWS:TRAIN_ROWS], val_ips)
-    train_idx = ~np.isin(ips[:TRAIN_ROWS-VALID_ROWS], val_ips)
-
+    if common:
+        train_idx = np.isin(ips[:TRAIN_ROWS-VALID_ROWS], val_ips)        
+    else:
+        train_idx = ~np.isin(ips[:TRAIN_ROWS-VALID_ROWS], val_ips)
+        
     train_df = df.iloc[:TRAIN_ROWS-VALID_ROWS, :]
     train_df = train_df.iloc[train_idx.ravel(), :]
 

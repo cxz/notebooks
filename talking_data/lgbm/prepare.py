@@ -79,7 +79,7 @@ def prepare_count(df, group, out_fname):
     logger.info('building {}'.format(out_fname))
     column_name = 'count-{}'.format('-'.join(group))
     gp = df[group + [helper]].groupby(by=group)[[helper]].count().reset_index().rename(index=str, columns={helper: column_name})
-    gp[column_name] = np.log1p(gp[column_name]).astype('float16')
+    gp[column_name] = np.log1p(gp[column_name].fillna(0)).astype('float16')
     
     logger.info('merge ')
     df = df.merge(gp, on=group, how='left')
@@ -94,6 +94,55 @@ def prepare_count(df, group, out_fname):
     del df
     del out_df
     gc.collect()
+    
+def datetime_to_deltas(series, delta=np.timedelta64(1, 's')):
+    t0 = series.min()
+    return ((series-t0)/delta).astype(np.uint32)
+
+def prepare_counts_per_minute(df, group, out_fname):
+    # column used to retrieve the count
+    helper = 'is_attributed'
+    
+    logger.info('building {}'.format(out_fname))
+    column_name = 'cps-{}'.format('-'.join(group))
+    
+    df['t'] = datetime_to_deltas(df.click_time)
+    df['t'] = df['t'].floordiv(60, fill_value=0) # seconds to minutes
+    df['t'] = df['t'].mod(1440, fill_value=0).astype(np.uint16) # 24 * 60
+        
+    groupby = group + ['t']
+    
+    gp_all = df[['t'] + [helper]].groupby(by=['t'])[[helper]].count().reset_index().rename(index=str, columns={helper: 'all'})
+    # logger.info('gp_all ok')
+    
+    gp = df[groupby + [helper]].groupby(by=groupby)[[helper]].count().reset_index().rename(index=str, columns={helper: column_name})
+    # logger.info('gp ok')
+    
+    gp = gp.merge(gp_all, on='t', how='left')
+            
+    gp[column_name] = (gp[column_name] / gp['all']).fillna(0).astype(np.float16)
+    df.drop([c for c in df.columns if c not in groupby], axis=1, inplace=True)
+    gp.drop(['all'], axis=1, inplace=True)        
+    
+    #print(gp.info(), df.info())
+    
+    del gp_all
+    gc.collect()
+    
+    logger.info('merge ')
+    df = df[groupby].merge(gp, on=groupby, how='left')
+                
+    logger.info('saving {}'.format(out_fname))
+    out_df = df[[column_name]]
+    out_df.reset_index(drop=True, inplace=True) # free index storage
+    
+    with open(out_fname, 'wb') as f:
+        pickle.dump(out_df, f)
+        
+    del df
+    del out_df
+    gc.collect()
+    
     
 def iter_all(paths):
     for path in paths:
@@ -155,6 +204,7 @@ def prepare_click_time_delta(df, group, out_fname):
     out_df = diff
     with open(out_fname, 'wb') as f:
         pickle.dump(out_df, f)
+           
     
 def _cache_reversed(df, out):
     if os.path.exists(out):
@@ -216,6 +266,10 @@ def run():
             ['ip', 'app'],
             ['ip', 'day', 'hour'],
             ['ip', 'day', 'device'],
+            ['ip', 'hour', 'device'],
+            ['ip', 'hour', 'channel'],
+            ['ip', 'hour', 'app'],
+            ['ip', 'hour', 'os'],
             ['ip', 'app', 'os'],            
             ['ip', 'day', 'app'],
             ['ip', 'day', 'channel'],
@@ -243,6 +297,23 @@ def run():
             
         del df
         gc.collect()
+        
+    for group in [
+            ['app'],
+            ['app', 'channel']
+        ]:
+        feature_name = 'cps_{}'.format('-'.join(group))
+        out_fname = os.path.join(CACHE, '%s.pkl' % feature_name)
+        
+        if os.path.exists(out_fname):
+            continue
+            
+        with open(base_pkl, 'rb') as f:
+            df = pickle.load(f)
+            logger.info('loaded')
+            
+        prepare_counts_per_minute(df, group, out_fname)
+        
                 
     for group in [
             #['ip', 'device', 'os'],
@@ -262,7 +333,7 @@ def run():
             logger.info('loaded')
             
         prepare_click_time_delta(df, group, out_fname)
-            
+        
     for group in [
             #['ip', 'device'],
             #['ip', 'device', 'app'],
@@ -270,6 +341,14 @@ def run():
         ]:
         feature_name = 'delta_rev_{}'.format('-'.join(group))
         out_fname = os.path.join(CACHE, '%s.pkl' % feature_name)
+        
+        if os.path.exists(out_fname):
+            continue
+            
+        with open(base_pkl, 'rb') as f:
+            df = pickle.load(f)
+            logger.info('loaded')
+        
         if not os.path.exists(out_fname):
             prepare_click_time_delta_rev(df, group, out_fname)            
     
