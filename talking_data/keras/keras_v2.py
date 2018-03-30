@@ -214,5 +214,5 @@ if __name__ == '__main__':
     ds = AnomalyDataset()
     print("dataset loaded.")
 
-    c = Classifier(optimizer='adam', loss=roc_auc_score_fn)
+    c = Classifier(optimizer='adam') # , loss=roc_auc_score_fn)
     model = c.train(ds, epochs=10, batch_size=64, shuffle=True, verbose=1)
