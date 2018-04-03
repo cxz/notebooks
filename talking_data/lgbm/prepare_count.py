@@ -2,8 +2,7 @@ import os
 import gc
 import pickle
 import logging
-import datetime
-from csv import DictReader
+
 from functools import lru_cache
 from collections import Counter
 from datetime import datetime 
@@ -13,7 +12,6 @@ import numpy as np
 import feather
 
 from tqdm import tqdm
-import hashlib
 
 TMP = '/kaggle1/td-cache'
 
@@ -28,17 +26,7 @@ def prepare_count(df, group, out_column, dtype):
     gc.collect()
     return out  
 
-def run():
-    print("loading ", datetime.now())
-    train_df = feather.read_dataframe(os.path.join(TMP, 'train_base.feather'))
-    print("done. ", datetime.now())
-    
-    most_freq_hours_in_test_data = [4, 5, 9, 10, 13, 14]
-    least_freq_hours_in_test_data = [6, 11, 15]
-
-    df['in_test_hh'] = (   3 
-                         - 2*df['hour'].isin(  most_freq_hours_in_test_data ) 
-                         - 1*df['hour'].isin( least_freq_hours_in_test_data ) ).astype('uint8')
+def process(df, kind):
     
     for group in [
             ['ip', 'day', 'in_test_hh'],
@@ -49,12 +37,12 @@ def run():
             ['ip', 'app', 'channel', 'hour']
     ]:
         out_column = 'count_{}'.format('_'.join(group))
-        out_fname = os.path.join(TMP, 'train_{}.feather'.format(out_column))
+        out_fname = os.path.join(TMP, '{}_{}.feather'.format(kiout_column))
         if os.path.exists(out_fname):
             continue
 
         print('preparing ', out_column, datetime.now())
-        out = prepare_count(train_df, group, out_column, np.uint32)
+        out = prepare_count(df, group, out_column, np.uint32)
 
         feather.write_dataframe(out, out_fname)
         print('wrote ', out_fname)
@@ -66,4 +54,16 @@ def run():
     
     
 if __name__ == '__main__':
-    run()
+    kind = 'train'
+    print("loading ", datetime.now())
+    df = feather.read_dataframe(os.path.join(TMP, '{}_base.feather'.format(kind)))
+    print("done. ", datetime.now())
+    
+    most_freq_hours_in_test_data = [4, 5, 9, 10, 13, 14]
+    least_freq_hours_in_test_data = [6, 11, 15]
+
+    df['in_test_hh'] = (   3 
+                         - 2*df['hour'].isin(  most_freq_hours_in_test_data ) 
+                         - 1*df['hour'].isin( least_freq_hours_in_test_data ) ).astype('uint8')
+    
+    process(df, kind)

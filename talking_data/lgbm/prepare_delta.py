@@ -65,10 +65,7 @@ def prepare_click_time_delta(df, group, column_name, dtype):
     return diff
         
     
-def run():
-    print("loading ", datetime.now())
-    train_df = feather.read_dataframe(os.path.join(TMP, 'train_base.feather'))
-    print("done. ", datetime.now())
+def process(df, kind):
 
     for group in [
             ['ip', 'device'],
@@ -77,12 +74,12 @@ def run():
             ['ip', 'app', 'device', 'os', 'channel'],
     ]:
         out_column = 'delta_{}'.format('_'.join(group))
-        out_fname = os.path.join(TMP, 'train_{}.feather'.format(out_column))
+        out_fname = os.path.join(TMP, '{}_{}.feather'.format(kind, out_column))
         if os.path.exists(out_fname):
             continue
 
         print('preparing ', out_column, datetime.now())
-        out = prepare_click_time_delta(train_df, group, out_column, np.int16)
+        out = prepare_click_time_delta(df, group, out_column, np.int16)
 
         feather.write_dataframe(out, out_fname)
         print('wrote ', out_fname)
@@ -94,4 +91,9 @@ def run():
     
     
 if __name__ == '__main__':
-    run()
+    kind = 'train'
+    print("loading ", datetime.now())
+    df = feather.read_dataframe(os.path.join(TMP, '{}_base.feather'.format(kind)))
+    print("done. ", datetime.now())
+    
+    process(df, kind)
