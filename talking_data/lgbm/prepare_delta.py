@@ -13,29 +13,18 @@ from datetime import datetime
 from csv import DictReader
 from functools import lru_cache
 from collections import Counter
+import logging
+
 
 import pandas as pd
 import numpy as np
+import feather
 
 from tqdm import tqdm
 import hashlib
 
-
-TRAIN_ROWS = 184903890
-VALID_ROWS = 53016937 # rows in train.csv with day == 2017-11-09             
-TEST_ROWS_V0 = 57537505
-TEST_ROWS = 18790469
-CACHE = '../cache'
-
-BASE_PATH = '../input'
-TRAIN_CSV = os.path.join(BASE_PATH, 'train.csv')
-TEST_CSV = os.path.join(BASE_PATH, 'test_v0.csv') # v0 with full rows
-
-import feather
-
 TMP = '/kaggle1/td-cache'
 
-import logging
 logging.basicConfig(level=logging.DEBUG, format='%(pathname)s %(asctime)s %(levelname)s %(message)s',)
 logger = logging.getLogger('prepare')
 
