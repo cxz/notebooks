@@ -2,7 +2,12 @@
     Build and cache train/test Dataframes.
 """
 
+import os
 from datetime import datetime
+
+import pandas as pd
+import feather
+
 
 TMP = '/kaggle1/td-cache'
 
@@ -12,7 +17,7 @@ import prepare_delta
 
 def prepare(kind):
     print("loading ", datetime.now())
-    train_df = feather.read_dataframe(os.path.join(TMP, '{}_base.feather'.format(kind)))
+    df = feather.read_dataframe(os.path.join(TMP, '{}_base.feather'.format(kind)))
     print("done. ", datetime.now())
     
     most_freq_hours_in_test_data = [4, 5, 9, 10, 13, 14]
@@ -27,5 +32,5 @@ def prepare(kind):
         
 
 if __name__ == '__main__':
-    prepare('train')
+    #prepare('train')
     prepare('test')

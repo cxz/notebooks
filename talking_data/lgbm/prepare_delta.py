@@ -31,17 +31,17 @@ logger = logging.getLogger('prepare')
 MISSING = -1
 
 
-def datetime_to_deltas(series, delta=np.timedelta64(1, 's')):
+def _datetime_to_deltas(series, delta=np.timedelta64(1, 's')):
     t0 = series.min()
     return ((series-t0)/delta).astype(np.uint32)
 
-def prepare_click_time_delta(df, group, column_name, dtype):
+def _prepare_click_time_delta(df, group, column_name, dtype):
     """ Click_time difference between consecute grouped rows.
     """
     
     logger.info('building {}'.format(column_name))
     
-    df['t'] = datetime_to_deltas(df.click_time)    
+    df['t'] = _datetime_to_deltas(df.click_time)    
             
     # store last click by given group
     last_click = {}
@@ -79,7 +79,7 @@ def process(df, kind):
             continue
 
         print('preparing ', out_column, datetime.now())
-        out = prepare_click_time_delta(df, group, out_column, np.int16)
+        out = _prepare_click_time_delta(df, group, out_column, np.int16)
 
         feather.write_dataframe(out, out_fname)
         print('wrote ', out_fname)
@@ -89,11 +89,3 @@ def process(df, kind):
 
         print('done ', datetime.now())
     
-    
-if __name__ == '__main__':
-    kind = 'train'
-    print("loading ", datetime.now())
-    df = feather.read_dataframe(os.path.join(TMP, '{}_base.feather'.format(kind)))
-    print("done. ", datetime.now())
-    
-    process(df, kind)

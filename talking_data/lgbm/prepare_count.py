@@ -15,7 +15,7 @@ from tqdm import tqdm
 
 TMP = '/kaggle1/td-cache'
 
-def prepare_count(df, group, out_column, dtype):    
+def _prepare_count(df, group, out_column, dtype):    
     helper = 'is_attributed'
     gp = df[group + [helper]].groupby(by=group)[helper] \
         .count() \
@@ -37,12 +37,12 @@ def process(df, kind):
             ['ip', 'app', 'channel', 'hour']
     ]:
         out_column = 'count_{}'.format('_'.join(group))
-        out_fname = os.path.join(TMP, '{}_{}.feather'.format(kiout_column))
+        out_fname = os.path.join(TMP, '{}_{}.feather'.format(kind, out_column))
         if os.path.exists(out_fname):
             continue
 
         print('preparing ', out_column, datetime.now())
-        out = prepare_count(df, group, out_column, np.uint32)
+        out = _prepare_count(df, group, out_column, np.uint32)
 
         feather.write_dataframe(out, out_fname)
         print('wrote ', out_fname)
@@ -51,19 +51,3 @@ def process(df, kind):
         gc.collect()
 
         print('done ', datetime.now())
-    
-    
-if __name__ == '__main__':
-    kind = 'train'
-    print("loading ", datetime.now())
-    df = feather.read_dataframe(os.path.join(TMP, '{}_base.feather'.format(kind)))
-    print("done. ", datetime.now())
-    
-    most_freq_hours_in_test_data = [4, 5, 9, 10, 13, 14]
-    least_freq_hours_in_test_data = [6, 11, 15]
-
-    df['in_test_hh'] = (   3 
-                         - 2*df['hour'].isin(  most_freq_hours_in_test_data ) 
-                         - 1*df['hour'].isin( least_freq_hours_in_test_data ) ).astype('uint8')
-    
-    process(df, kind)
