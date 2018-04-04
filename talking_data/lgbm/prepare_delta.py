@@ -58,7 +58,7 @@ def _prepare_click_time_delta(df, group, column_name, dtype):
         last_click[k] = curr
         
     diff = pd.DataFrame(out, columns=[column_name])
-    diff.loc[:, diff[column_name]>=0] = np.log1p(diff[column_name])
+    diff.loc[diff[column_name] > 0, column_name] = np.log1p(diff.loc[diff[column_name] > 0, column_name])
     diff = diff.astype(dtype)
     return diff
         
@@ -90,6 +90,6 @@ def process(df, kind):
     
     
 if __name__ == '__main__':
-    df = feather.read_dataframe(os.path.join(TMP, 'train_delta_ip_device.feather'))
+    df = feather.read_dataframe(os.path.join(TMP, 'test_delta_ip_device.feather'))
     print(df.info())
     print(df.delta_ip_device.describe())
