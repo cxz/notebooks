@@ -2,9 +2,6 @@
 
 Draft.
 
-validation day==9, hour==4, baseline.
-[395]   train's auc: 0.984294   valid's auc: 0.963007
-
 """
 
 
@@ -58,7 +55,7 @@ def run(train_df,
     use_validation = val_dfs is not None and len(val_dfs) > 0
     if use_validation:
         for val_df_name, val_df in val_dfs.items():
-            print('{}: {}'.format(val_df_name, len(val_df))
+            print('{}: {}'.format(val_df_name, len(val_df)))
 
     params = {
               'boosting_type': 'gbdt',

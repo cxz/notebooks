@@ -13,7 +13,7 @@ TMP = '/kaggle1/td-cache'
 
 import prepare_count
 import prepare_delta
-
+import prepare_mtbc
 
 def prepare(kind):
     print("loading ", datetime.now())
@@ -29,8 +29,9 @@ def prepare(kind):
     
     prepare_count.process(df, kind)
     prepare_delta.process(df, kind)
+    prepare_mtbc.process(df, kind)
         
 
 if __name__ == '__main__':
     prepare('train')
-    # prepare('test')
+    prepare('test')

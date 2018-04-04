@@ -20,9 +20,7 @@ BASE_PATH = '../input'
 TRAIN_CSV = os.path.join(BASE_PATH, 'train.csv')
 TEST_CSV = os.path.join(BASE_PATH, 'test_v0.csv') # v0 with full rows
 
-
 logger = logging.getLogger('data2')
-
 
 def load(kind):
     base_fname = os.path.join(TMP, '{}_base.feather'.format(kind))
@@ -46,9 +44,9 @@ def load(kind):
 
     for group in [
             ['ip', 'device'],
-            ['ip', 'app', 'device'],
-            ['ip', 'app', 'device', 'os'],
-            ['ip', 'app', 'device', 'os', 'channel'],
+            #['ip', 'app', 'device'],
+            #['ip', 'app', 'device', 'os'],
+            #['ip', 'app', 'device', 'os', 'channel'],
     ]:
         column = 'delta_{}'.format('_'.join(group))
         fname = os.path.join(TMP, '{}_{}.feather'.format(kind, column))
@@ -56,6 +54,17 @@ def load(kind):
         print('loading ', fname, datetime.now())
         extra_df = feather.read_dataframe(fname)
         df[column] = extra_df[column]
+        
+    for group in [
+            ['ip', 'device'],
+    ]:
+        column = 'mtbc_{}'.format('_'.join(group))
+        fname = os.path.join(TMP, '{}_{}.feather'.format(kind, column))
+
+        print('loading ', fname, datetime.now())
+        extra_df = feather.read_dataframe(fname)
+        df[column] = extra_df[column]
+        
 
     print('loaded. ', datetime.now()) 
     return df

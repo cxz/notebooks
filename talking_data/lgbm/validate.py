@@ -12,6 +12,24 @@ run 0:
 [30]    train's auc: 0.968663   h4's auc: 0.959477      h5's auc: 0.963473      h9's auc: 0.95933       h10's auc: 0.958812     h13's auc: 0.965431     h14's auc: 0.971698
 [40]    train's auc: 0.970679   h4's auc: 0.960195      h5's auc: 0.964605      h9's auc: 0.961153      h10's auc: 0.960396     h13's auc: 0.967443     h14's auc: 0.97354
 [50]    train's auc: 0.972083   h4's auc: 0.961635      h5's auc: 0.965603      h9's auc: 0.962678      h10's auc: 0.962149     h13's auc: 0.969177     h14's auc: 0.975069    
+
+run 1:
+    predictors = [
+        'app', 'channel',  'device', 'ip',  'os',
+        'hour', 'count_ip_day_in_test_hh', 'count_ip_day_hour',
+        'count_ip_os_hour', 'count_ip_app_hour', 'count_ip_device_hour',
+        'count_ip_app_channel_hour', 
+        'delta_ip_device'
+    ]
+[10]    train's auc: 0.960376   h4's auc: 0.951176      h5's auc: 0.955174      h9's auc: 0.951835      h10's auc: 0.952416     h13's auc: 0.959729     h14's auc: 0.966331
+[20]    train's auc: 0.968236   h4's auc: 0.95843       h5's auc: 0.962334      h9's auc: 0.958911      h10's auc: 0.95786      h13's auc: 0.965024     h14's auc: 0.971281
+[30]    train's auc: 0.968936   h4's auc: 0.958543      h5's auc: 0.962655      h9's auc: 0.959729      h10's auc: 0.958554     h13's auc: 0.96558      h14's auc: 0.971882
+[40]    train's auc: 0.970379   h4's auc: 0.959628      h5's auc: 0.963854      h9's auc: 0.96125       h10's auc: 0.9604       h13's auc: 0.967577     h14's auc: 0.973552
+[50]    train's auc: 0.972173   h4's auc: 0.961355      h5's auc: 0.96519       h9's auc: 0.962771      h10's auc: 0.962334     h13's auc: 0.969326     h14's auc: 0.975364
+
+
+    
+
 """
 
 
@@ -66,7 +84,7 @@ def run(train_df,
     use_validation = val_dfs is not None and len(val_dfs) > 0
     if use_validation:
         for val_df_name, val_df in val_dfs.items():
-            print('{}: {}'.format(val_df_name, len(val_df))
+            print('{}: {}'.format(val_df_name, len(val_df)))
 
     params = {
               'boosting_type': 'gbdt',
@@ -143,18 +161,24 @@ if __name__ == '__main__':
     target = 'is_attributed'
     categorical = ['app', 'device', 'os', 'channel', 'hour']
     
-    predictors = ['app', 'channel',  'device', 'ip',  'os',
-       'hour', 'count_ip_day_in_test_hh', 'count_ip_day_hour',
-       'count_ip_os_hour', 'count_ip_app_hour', 'count_ip_device_hour',
-       'count_ip_app_channel_hour', ]    
+    predictors = [
+        'app', 'channel',  'device', 'ip',  'os',
+        'hour', 'count_ip_day_in_test_hh', 'count_ip_day_hour',
+        'count_ip_os_hour', 'count_ip_app_hour', 'count_ip_device_hour',
+        'count_ip_app_channel_hour', 
+        #'delta_ip_device',
+        'mtbc_ip_device',
+    ]
     
+    # used to save memory only, as when building lgbm dataset we specify
+    # columns to be used explicitly
     excluded = [
         'click_time',
         'day',
         'delta_ip_device', 
-        'delta_ip_app_device',
-        'delta_ip_app_device_os', 
-        'delta_ip_app_device_os_channel'
+        #'delta_ip_app_device',
+        #'delta_ip_app_device_os', 
+        #'delta_ip_app_device_os_channel'
     ]
     
     for column in excluded:
@@ -174,4 +198,4 @@ if __name__ == '__main__':
         'h14': val_df[val_df.hour == 14]
     }
     
-    run(train_df, val_dfs, predictors, target, categorical, 100)
+    run(train_df, val_dfs, predictors, target, categorical, 50)
