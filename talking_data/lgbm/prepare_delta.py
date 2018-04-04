@@ -10,9 +10,6 @@ import gc
 import pickle
 import logging
 from datetime import datetime
-from csv import DictReader
-from functools import lru_cache
-from collections import Counter
 import logging
 
 
@@ -21,7 +18,6 @@ import numpy as np
 import feather
 
 from tqdm import tqdm
-import hashlib
 
 TMP = '/kaggle1/td-cache'
 
@@ -36,7 +32,7 @@ def _datetime_to_deltas(series, delta=np.timedelta64(1, 's')):
     return ((series-t0)/delta).astype(np.uint32)
 
 def _prepare_click_time_delta(df, group, column_name, dtype):
-    """ Click_time difference between consecute grouped rows.
+    """ Click_time difference between consecutive grouped rows.
     """
     
     logger.info('building {}'.format(column_name))
@@ -48,7 +44,7 @@ def _prepare_click_time_delta(df, group, column_name, dtype):
     
     out = []
     
-    #assuming input csv are ordered by click_time.
+    #assuming input csv is ordered by click_time.
     for row in tqdm(zip(*([df['t']] + [df[g] for g in group])), total=len(df)): 
         t = row[0]
         k = tuple(row[1:])
@@ -61,7 +57,9 @@ def _prepare_click_time_delta(df, group, column_name, dtype):
             out.append(MISSING)
         last_click[k] = curr
         
-    diff = pd.DataFrame(out, columns=[column_name]).astype(dtype)
+    diff = pd.DataFrame(out, columns=[column_name])
+    diff.loc[:, diff[column_name]>=0] = np.log1p(diff[column_name])
+    diff = diff.astype(dtype)
     return diff
         
     
@@ -69,9 +67,9 @@ def process(df, kind):
 
     for group in [
             ['ip', 'device'],
-            ['ip', 'app', 'device'],
-            ['ip', 'app', 'device', 'os'],
-            ['ip', 'app', 'device', 'os', 'channel'],
+            #['ip', 'app', 'device'],
+            #['ip', 'app', 'device', 'os'],
+            #['ip', 'app', 'device', 'os', 'channel'],
     ]:
         out_column = 'delta_{}'.format('_'.join(group))
         out_fname = os.path.join(TMP, '{}_{}.feather'.format(kind, out_column))
@@ -79,7 +77,8 @@ def process(df, kind):
             continue
 
         print('preparing ', out_column, datetime.now())
-        out = _prepare_click_time_delta(df, group, out_column, np.int16)
+        # using float instead of uint because log1p and -1 for missing.
+        out = _prepare_click_time_delta(df, group, out_column, np.float32)
 
         feather.write_dataframe(out, out_fname)
         print('wrote ', out_fname)
@@ -89,3 +88,8 @@ def process(df, kind):
 
         print('done ', datetime.now())
     
+    
+if __name__ == '__main__':
+    df = feather.read_dataframe(os.path.join(TMP, 'train_delta_ip_device.feather'))
+    print(df.info())
+    print(df.delta_ip_device.describe())

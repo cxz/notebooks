@@ -1,10 +1,17 @@
 """
 
-Draft.
 
-validation day==9, hour==4, baseline.
-[395]   train's auc: 0.984294   valid's auc: 0.963007
-
+run 0:
+    predictors = ['app', 'channel',  'device', 'ip',  'os',
+       'hour', 'count_ip_day_in_test_hh', 'count_ip_day_hour',
+       'count_ip_os_hour', 'count_ip_app_hour', 'count_ip_device_hour',
+       'count_ip_app_channel_hour', ]    
+    
+[10]    train's auc: 0.959527   h4's auc: 0.950359      h5's auc: 0.955799      h9's auc: 0.950592      h10's auc: 0.951147     h13's auc: 0.959001     h14's auc: 0.965224
+[20]    train's auc: 0.965493   h4's auc: 0.95573       h5's auc: 0.960708      h9's auc: 0.956189      h10's auc: 0.955926     h13's auc: 0.963335     h14's auc: 0.969723
+[30]    train's auc: 0.968663   h4's auc: 0.959477      h5's auc: 0.963473      h9's auc: 0.95933       h10's auc: 0.958812     h13's auc: 0.965431     h14's auc: 0.971698
+[40]    train's auc: 0.970679   h4's auc: 0.960195      h5's auc: 0.964605      h9's auc: 0.961153      h10's auc: 0.960396     h13's auc: 0.967443     h14's auc: 0.97354
+[50]    train's auc: 0.972083   h4's auc: 0.961635      h5's auc: 0.965603      h9's auc: 0.962678      h10's auc: 0.962149     h13's auc: 0.969177     h14's auc: 0.975069    
 """
 
 
@@ -26,6 +33,7 @@ import lightgbm as lgb
 
 from tqdm import tqdm
 import hashlib
+import feather
 
 import data2
 
@@ -39,13 +47,13 @@ BASE_PATH = '../input'
 TRAIN_CSV = os.path.join(BASE_PATH, 'train.csv')
 TEST_CSV = os.path.join(BASE_PATH, 'test_v0.csv') # v0 with full rows
 
-import feather
 
 TMP = '/kaggle1/td-cache'
 EARLY_STOP = 50
+MAX_VAL_ROUNDS = 1000
 MAX_ROUNDS = 650
 
-        
+      
 def run(train_df, 
         val_dfs, 
         predictors, 
@@ -154,8 +162,16 @@ if __name__ == '__main__':
         
     gc.collect()
         
-    train_df = trainval_df
-    val_dfs = None
+    train_df = trainval_df.iloc[:-VALID_ROWS]
+    val_df = trainval_df.iloc[-VALID_ROWS:]
     
-    run(train_df, val_dfs, predictors, target, categorical, 850)
+    val_dfs = {
+        'h4':  val_df[val_df.hour ==  4],
+        'h5':  val_df[val_df.hour ==  5],
+        'h9':  val_df[val_df.hour ==  9],
+        'h10': val_df[val_df.hour == 10],
+        'h13': val_df[val_df.hour == 13],
+        'h14': val_df[val_df.hour == 14]
+    }
     
+    run(train_df, val_dfs, predictors, target, categorical, 100)

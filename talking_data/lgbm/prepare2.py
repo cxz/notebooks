@@ -32,5 +32,5 @@ def prepare(kind):
         
 
 if __name__ == '__main__':
-    #prepare('train')
-    prepare('test')
+    prepare('train')
+    # prepare('test')
