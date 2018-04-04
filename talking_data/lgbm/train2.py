@@ -128,14 +128,16 @@ def run(train_df, val_df):
         #gc.collect()
         valid_sets = [dtrain, dvalid]
         valid_names = ['train', 'valid']
+        best_auc_metric = 'valid'
         max_rounds = MAX_VAL_ROUNDS
         early_stopping_rounds = 50
         prefix = 'cv'
     else:
         valid_sets = [dtrain]
         valid_names = ['train']
+        best_auc_metric = 'train'
         max_rounds = MAX_ROUNDS
-        early_stopping_rounds = -1
+        early_stopping_rounds = None
         prefix = 'train'
 
     evals_results = {}
@@ -149,7 +151,7 @@ def run(train_df, val_df):
                       early_stopping_rounds=early_stopping_rounds,
                       verbose_eval=10, 
                       feval=None)
-
+    
     best_auc = evals_results[best_auc_metric][LGB_PARAMS['metric']][m.best_iteration - 1]        
     out = '{}-{}-{}.pkl'.format(prefix, best_auc, datetime.now().strftime("%Y%m%d%H%M%S"))
 
@@ -169,3 +171,4 @@ if __name__ == '__main__':
     print(trainval_df.info())
     
     run(train_df, val_df)
+    

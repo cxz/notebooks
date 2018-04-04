@@ -19,19 +19,22 @@ logger = logging.getLogger('test')
 
 def load_model(model_fname):
     with open(model_fname, 'rb') as f:
-        m, _, _, predictors = pickle.load(f)        
+        #m, _, _, predictors = pickle.load(f)        
+        m, _, _ = pickle.load(f)        
         
-    return m, predictors
+    #return m, predictors
+    return m
 
 def run(model_fname, out_csv, num_iteration=-1):
     test_df = data2.load('test')
     click_ids = data2.load_click_ids()    
+            
+    m = load_model(model_fname) 
+    predictors = m.feature_name()
     
     print('test_df: ', len(test_df))
     print('predictors: ', predictors)
-        
-    m, _ = load_model(model_fname) # replace with predictors
-        
+    
     if num_iteration != -1 and num_iteration != m.best_iteration - 1:
         print('best iter: {}, specified: {}', m.best_iteration, num_iteration)
     
@@ -45,9 +48,11 @@ def run(model_fname, out_csv, num_iteration=-1):
     print('len after duplicates removed: ', len(mapping))
 
     mapping = mapping.set_index(['click_id_v0'])
+    print(mapping.head(10))
     
     preds_df = pd.DataFrame(preds, columns=['is_attributed'])
     preds_df['click_id_v0'] = click_ids
+    print(preds_df[preds_df.click_id_v0==21290878])
     
     preds_df = preds_df.set_index(['click_id_v0'])
     preds_df = mapping.join(preds_df, how='left')
