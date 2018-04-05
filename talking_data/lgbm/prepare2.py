@@ -14,6 +14,7 @@ TMP = '/kaggle1/td-cache'
 import prepare_count
 import prepare_delta
 import prepare_mtbc
+import prepare_lhood
 
 def prepare(kind):
     print("loading ", datetime.now())
@@ -28,10 +29,11 @@ def prepare(kind):
                          - 1*df['hour'].isin( least_freq_hours_in_test_data ) ).astype('uint8')
     
     prepare_count.process(df, kind)
-    prepare_delta.process(df, kind)
-    prepare_mtbc.process(df, kind)
+    #prepare_delta.process(df, kind)
+    #prepare_mtbc.process(df, kind)
+    prepare_lhood.process(df, kind)
         
 
 if __name__ == '__main__':
     prepare('train')
-    prepare('test')
+    # prepare('test')

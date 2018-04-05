@@ -116,7 +116,7 @@ def run(train_df,
                       verbose_eval=10, 
                       feval=None)
     
-    best_auc = evals_results[best_auc_metric][LGB_PARAMS['metric']][m.best_iteration - 1]        
+    best_auc = evals_results[best_auc_metric][params['metric']][model.best_iteration - 1]        
     out = '{}-{}-{}.pkl'.format(prefix, best_auc, datetime.now().strftime("%Y%m%d%H%M%S"))
 
     with open(out, 'wb') as f:

@@ -33,7 +33,9 @@ def load(kind):
             ['ip', 'os', 'hour'],
             ['ip', 'app',  'hour'],
             ['ip', 'device', 'hour'],
-            ['ip', 'app', 'channel', 'hour']
+            #['ip', 'app', 'channel', 'hour'],
+            ['ip', 'day', 'app', 'in_test_hh'],
+            ['ip', 'day', 'device', 'in_test_hh'],
     ]:
         column = 'count_{}'.format('_'.join(group))
         fname = os.path.join(TMP, '{}_{}.feather'.format(kind, column))
@@ -43,20 +45,23 @@ def load(kind):
         df[column] = extra_df[column]
 
     for group in [
-            ['ip', 'device'],
+            #['ip', 'device'],
             #['ip', 'app', 'device'],
             #['ip', 'app', 'device', 'os'],
-            #['ip', 'app', 'device', 'os', 'channel'],
+            #['ip', 'device', 'os', 'channel']
     ]:
         column = 'delta_{}'.format('_'.join(group))
         fname = os.path.join(TMP, '{}_{}.feather'.format(kind, column))
 
         print('loading ', fname, datetime.now())
         extra_df = feather.read_dataframe(fname)
+        if column not in extra_df.columns:
+            column = column.replace('_', '-')  #TODO: remove
         df[column] = extra_df[column]
         
     for group in [
-            ['ip', 'device'],
+            #['ip', 'device'],
+            #['ip', 'device', 'os', 'channel']
     ]:
         column = 'mtbc_{}'.format('_'.join(group))
         fname = os.path.join(TMP, '{}_{}.feather'.format(kind, column))
@@ -65,7 +70,20 @@ def load(kind):
         extra_df = feather.read_dataframe(fname)
         df[column] = extra_df[column]
         
+    for group in [
+        #['ip', 'day', 'in_test_hh'],
+        #['app', 'channel', 'day', 'in_test_hh'],
+        #['ip', 'hour'],
+        #['ip', 'device', 'hour'],
+        ['ip', 'channel', 'hour'],
+        ['ip', 'app', 'hour'],                
+    ]:
+        column = 'lhood_{}'.format('_'.join(group))
+        fname = os.path.join(TMP, '{}_{}.feather'.format(kind, column))
 
+        print('loading ', fname, datetime.now())
+        extra_df = feather.read_dataframe(fname)
+        df[column] = extra_df[column]
     print('loaded. ', datetime.now()) 
     return df
 
