@@ -11,36 +11,15 @@ import pickle
 import logging
 import datetime
 import operator
-from csv import DictReader
-from functools import lru_cache
-from collections import Counter
 from datetime import datetime 
 
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split 
 import lightgbm as lgb
 
-from tqdm import tqdm
-import hashlib
+#from sklearn.model_selection import train_test_split 
 
 import data2
-
-TRAIN_ROWS = 184903890
-VALID_ROWS = 53016937 # rows in train.csv with day == 2017-11-09             
-TEST_ROWS_V0 = 57537505
-TEST_ROWS = 18790469
-CACHE = '../cache'
-
-BASE_PATH = '../input'
-TRAIN_CSV = os.path.join(BASE_PATH, 'train.csv')
-TEST_CSV = os.path.join(BASE_PATH, 'test_v0.csv') # v0 with full rows
-
-import feather
-
-TMP = '/kaggle1/td-cache'
-EARLY_STOP = 50
-MAX_ROUNDS = 650
 
         
 def run(train_df, 
@@ -62,15 +41,12 @@ def run(train_df,
               'objective': 'binary',
               'metric':'auc',
               'learning_rate': 0.1,
-              'num_leaves': 9,  # we should let it be smaller than 2^(max_depth)
-              'max_depth': 5,  # -1 means no limit
-              'min_child_samples': 100,  # Minimum number of data need in a child(min_data_in_leaf)
-              'max_bin': 100,  # Number of bucketed bin for feature values
+              'num_leaves': 31,  # we should let it be smaller than 2^(max_depth)
+              'max_depth': -1,  # -1 means no limit
+              'max_bin': 255,  
               'subsample': 0.9,  # Subsample ratio of the training instance.
               'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
-              'colsample_bytree': 0.7,  # Subsample ratio of columns when constructing each tree.
-              'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
-              'min_split_gain': 0,  # lambda_l1, lambda_l2 and min_gain_to_split to regularization
+              'bagging_freq': 1,
               'nthread': 8,
               'verbose': 0,
               'scale_pos_weight':99.7, # because training data is extremely unbalanced 
@@ -132,18 +108,22 @@ if __name__ == '__main__':
     target = 'is_attributed'
     categorical = ['app', 'device', 'os', 'channel', 'hour']
     
-    predictors = ['app', 'channel',  'device', 'ip',  'os',
-       'hour', 'count_ip_day_in_test_hh', 'count_ip_day_hour',
-       'count_ip_os_hour', 'count_ip_app_hour', 'count_ip_device_hour',
-       'count_ip_app_channel_hour', ]    
+    predictors = [
+        'app', 'channel',  'device', 'os', 'hour', 
+        'count_ip_day_in_test_hh', 
+        'count_ip_day_hour',
+        'count_ip_os_hour', 
+        'count_ip_app_hour', 
+        'count_ip_device_hour',
+        'count_ip_day_app_in_test_hh',
+        'count_ip_day_device_in_test_hh',
+        'lhood_ip_channel_hour',
+        'lhood_ip_app_hour',        
+    ] 
     
     excluded = [
         'click_time',
-        'day',
-        'delta_ip_device', 
-        'delta_ip_app_device',
-        'delta_ip_app_device_os', 
-        'delta_ip_app_device_os_channel'
+        'ip'
     ]
     
     for column in excluded:
@@ -151,8 +131,9 @@ if __name__ == '__main__':
         
     gc.collect()
         
-    train_df = trainval_df
+    # i'm not convinced yet restricting training days is good
+    train_df = trainval_df.loc[trainval_df.day.isin([8, 9])]
     val_dfs = None
     
-    run(train_df, val_dfs, predictors, target, categorical, 850)
+    run(train_df, val_dfs, predictors, target, categorical, 500)
     

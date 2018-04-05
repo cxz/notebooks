@@ -133,6 +133,31 @@ Did not meet early stopping. Best iteration is:
               'verbose': 0,
               'scale_pos_weight':99.7, # because training data is extremely unbalanced 
     
+run7:
+    train using day==8
+    predictors = [
+        'app', 'channel',  'device', 'os',
+        'hour', 'count_ip_day_in_test_hh', 'count_ip_day_hour',
+        'count_ip_os_hour', 'count_ip_app_hour', 
+        'count_ip_device_hour',
+        #'count_ip_app_channel_hour', 
+        'count_ip_day_app_in_test_hh',
+        'count_ip_day_device_in_test_hh',
+        #'delta_ip_device'
+        #'lhood_ip_day_in_test_hh',
+        #'lhood_app_channel_day_in_test_hh',
+        #'lhood_ip_hour',
+        #'lhood_ip_device_hour',        
+        'lhood_ip_channel_hour',
+        'lhood_ip_app_hour',        
+    ]    
+[10]    train's auc: 0.974769   h4's auc: 0.963476      h5's auc: 0.968866      h9's auc: 0.967181      h10's auc: 0.966385     h13's auc: 0.971319     h14's auc: 0.975215
+[20]    train's auc: 0.978476   h4's auc: 0.966495      h5's auc: 0.972048      h9's auc: 0.969669      h10's auc: 0.96903      h13's auc: 0.974281     h14's auc: 0.978222
+[30]    train's auc: 0.979668   h4's auc: 0.968354      h5's auc: 0.972838      h9's auc: 0.97087       h10's auc: 0.9704       h13's auc: 0.975607     h14's auc: 0.97949
+[40]    train's auc: 0.980941   h4's auc: 0.969604      h5's auc: 0.974066      h9's auc: 0.971887      h10's auc: 0.971339     h13's auc: 0.976676     h14's auc: 0.980188
+[50]    train's auc: 0.982477   h4's auc: 0.970871      h5's auc: 0.974923      h9's auc: 0.972672      h10's auc: 0.972522     h13's auc: 0.977487     h14's auc: 0.981103
+[('count_ip_day_hour', 24), ('device', 30), ('count_ip_os_hour', 34), ('count_ip_day_app_in_test_hh', 45), ('count_ip_day_device_in_test_hh', 56), ('count_ip_device_hour', 58), ('lhood_ip_channel_hour', 76), ('lhood_ip_app_hour', 102), ('hour', 107), ('count_ip_day_in_test_hh', 113), ('os', 164), ('count_ip_app_hour', 180), ('app', 217), ('channel', 294)]
+    
 """
 
 
@@ -142,39 +167,24 @@ import pickle
 import logging
 import datetime
 import operator
-from csv import DictReader
-from functools import lru_cache
-from collections import Counter
 from datetime import datetime 
 
 import pandas as pd
 import numpy as np
-from sklearn.model_selection import train_test_split 
 import lightgbm as lgb
 
-from tqdm import tqdm
-import hashlib
-import feather
+# from sklearn.model_selection import train_test_split 
+
 
 import data2
 
-TRAIN_ROWS = 184903890
-VALID_ROWS = 53016937 # rows in train.csv with day == 2017-11-09             
-TEST_ROWS_V0 = 57537505
-TEST_ROWS = 18790469
-CACHE = '../cache'
 
-BASE_PATH = '../input'
-TRAIN_CSV = os.path.join(BASE_PATH, 'train.csv')
-TEST_CSV = os.path.join(BASE_PATH, 'test_v0.csv') # v0 with full rows
-
-
-TMP = '/kaggle1/td-cache'
-EARLY_STOP = 50
-MAX_VAL_ROUNDS = 1000
-MAX_ROUNDS = 650
-
-      
+#
+# TODO: delete this function and use train2.run which should be identical.
+#
+#
+#
+#
 def run(train_df, 
         val_dfs, 
         predictors, 
@@ -204,7 +214,7 @@ def run(train_df,
               #'colsample_bytree': 0.7,  # Subsample ratio of columns when constructing each tree.
               #'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
               #'min_split_gain': 0,  # lambda_l1, lambda_l2 and min_gain_to_split to regularization
-              'nthread': 4,
+              'nthread': 8,
               'verbose': 0,
               'scale_pos_weight':99.7, # because training data is extremely unbalanced 
              }
@@ -315,4 +325,5 @@ if __name__ == '__main__':
         'h14': val_df[val_df.hour == 14]
     }
     
-    run(train_df, val_dfs, predictors, target, categorical, 50)
+    iterations = 500
+    run(train_df, val_dfs, predictors, target, categorical, iterations)
