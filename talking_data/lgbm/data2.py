@@ -76,7 +76,11 @@ def load(kind):
         #['ip', 'hour'],
         #['ip', 'device', 'hour'],
         ['ip', 'channel', 'hour'],
-        ['ip', 'app', 'hour'],                
+        ['ip', 'app', 'hour'],      
+        #['channel', 'hour'],
+        #['app', 'hour'],
+        #['app', 'channel', 'hour'],
+        #['os', 'hour']        
     ]:
         column = 'lhood_{}'.format('_'.join(group))
         fname = os.path.join(TMP, '{}_{}.feather'.format(kind, column))

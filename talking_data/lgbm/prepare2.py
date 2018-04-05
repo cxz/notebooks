@@ -28,12 +28,12 @@ def prepare(kind):
                          - 2*df['hour'].isin(  most_freq_hours_in_test_data ) 
                          - 1*df['hour'].isin( least_freq_hours_in_test_data ) ).astype('uint8')
     
-    prepare_count.process(df, kind)
+    #prepare_count.process(df, kind)
     #prepare_delta.process(df, kind)
     #prepare_mtbc.process(df, kind)
     prepare_lhood.process(df, kind)
         
 
 if __name__ == '__main__':
-    prepare('train')
-    # prepare('test')
+    # prepare('train')
+    prepare('test')

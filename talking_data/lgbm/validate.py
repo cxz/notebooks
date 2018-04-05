@@ -1,5 +1,5 @@
 """
-
+    Validation playground.
 
 run 0:
     predictors = ['app', 'channel',  'device', 'ip',  'os',
@@ -157,7 +157,92 @@ run7:
 [40]    train's auc: 0.980941   h4's auc: 0.969604      h5's auc: 0.974066      h9's auc: 0.971887      h10's auc: 0.971339     h13's auc: 0.976676     h14's auc: 0.980188
 [50]    train's auc: 0.982477   h4's auc: 0.970871      h5's auc: 0.974923      h9's auc: 0.972672      h10's auc: 0.972522     h13's auc: 0.977487     h14's auc: 0.981103
 [('count_ip_day_hour', 24), ('device', 30), ('count_ip_os_hour', 34), ('count_ip_day_app_in_test_hh', 45), ('count_ip_day_device_in_test_hh', 56), ('count_ip_device_hour', 58), ('lhood_ip_channel_hour', 76), ('lhood_ip_app_hour', 102), ('hour', 107), ('count_ip_day_in_test_hh', 113), ('os', 164), ('count_ip_app_hour', 180), ('app', 217), ('channel', 294)]
+   
+
+
+run8:
+    params = {
+              'boosting_type': 'gbdt',
+              'objective': 'binary',
+              'metric':'auc',
+              'learning_rate': 0.1,
+              'num_leaves': 31,  # we should let it be smaller than 2^(max_depth)
+              'max_depth': -1,  # -1 means no limit
+              #'min_child_samples': 100,  # Minimum number of data need in a child(min_data_in_leaf)
+              'max_bin': 255,  
+              'bagging_freq': 0.8,
+              'bagging_freq': 1,
+              'bagging_seed': seed,
+              #'colsample_bytree': 0.7,  # Subsample ratio of columns when constructing each tree.
+              #'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
+              #'min_split_gain': 0,  # lambda_l1, lambda_l2 and min_gain_to_split to regularization
+              'nthread': 8,
+              'verbose': 0,
+              'scale_pos_weight':99.7, # because training data is extremely unbalanced               
+             }
+    predictors = [
+        'app', 'channel',  'device', 'os',
+        'hour', 'count_ip_day_in_test_hh', 'count_ip_day_hour',
+        'count_ip_os_hour', 'count_ip_app_hour', 
+        'count_ip_device_hour',
+        'count_ip_day_app_in_test_hh',
+        'count_ip_day_device_in_test_hh',
+        'lhood_ip_channel_hour',
+        'lhood_ip_app_hour',        
+    ]
+[10]    train's auc: 0.974818   h4's auc: 0.963419      h5's auc: 0.96882       h9's auc: 0.967234      h10's auc: 0.966369     h13's auc: 0.971383     h14's auc: 0.975282
+[20]    train's auc: 0.978219   h4's auc: 0.967371      h5's auc: 0.97199       h9's auc: 0.969815      h10's auc: 0.969312     h13's auc: 0.974298     h14's auc: 0.978425
+[30]    train's auc: 0.979675   h4's auc: 0.968135      h5's auc: 0.973008      h9's auc: 0.97091       h10's auc: 0.970427     h13's auc: 0.975697     h14's auc: 0.979595
+[40]    train's auc: 0.981133   h4's auc: 0.969135      h5's auc: 0.974236      h9's auc: 0.972047      h10's auc: 0.971478     h13's auc: 0.976748     h14's auc: 0.980318
+[50]    train's auc: 0.982408   h4's auc: 0.970327      h5's auc: 0.974711      h9's auc: 0.972712      h10's auc: 0.972474     h13's auc: 0.977557     h14's auc: 0.981164
+[60]    train's auc: 0.983684   h4's auc: 0.971507      h5's auc: 0.975734      h9's auc: 0.973612      h10's auc: 0.973277     h13's auc: 0.978487     h14's auc: 0.981889
+[70]    train's auc: 0.984564   h4's auc: 0.972207      h5's auc: 0.976365      h9's auc: 0.974098      h10's auc: 0.97373      h13's auc: 0.978993     h14's auc: 0.982311
+[80]    train's auc: 0.985159   h4's auc: 0.972479      h5's auc: 0.976593      h9's auc: 0.974291      h10's auc: 0.974017     h13's auc: 0.979238     h14's auc: 0.982701
+[90]    train's auc: 0.985623   h4's auc: 0.972693      h5's auc: 0.9767        h9's auc: 0.974427      h10's auc: 0.974099     h13's auc: 0.979404     h14's auc: 0.982842
+[100]   train's auc: 0.986052   h4's auc: 0.972744      h5's auc: 0.976764      h9's auc: 0.974538      h10's auc: 0.974219     h13's auc: 0.979524     h14's auc: 0.982915
+[110]   train's auc: 0.986472   h4's auc: 0.972887      h5's auc: 0.976788      h9's auc: 0.974572      h10's auc: 0.974308     h13's auc: 0.979591     h14's auc: 0.98304
+[120]   train's auc: 0.986813   h4's auc: 0.97293       h5's auc: 0.976875      h9's auc: 0.974575      h10's auc: 0.974381     h13's auc: 0.979601     h14's auc: 0.983106
+
+
+
+run9:
+    train using day==8
+    note: fixed lhood type from bool to binned uint.
+    note2: calculate lhood using folds/day instead  of whole train to reduce leakage
     
+    predictors = [
+        'app', 'channel',  'device', 'os',
+        'hour', 'count_ip_day_in_test_hh', 'count_ip_day_hour',
+        'count_ip_os_hour', 'count_ip_app_hour', 
+        'count_ip_device_hour',
+        #'count_ip_app_channel_hour', 
+        'count_ip_day_app_in_test_hh',
+        'count_ip_day_device_in_test_hh',
+        #'delta_ip_device'
+        #'lhood_ip_day_in_test_hh',
+        #'lhood_app_channel_day_in_test_hh',
+        #'lhood_ip_hour',
+        #'lhood_ip_device_hour',        
+        'lhood_ip_channel_hour',
+        'lhood_ip_app_hour',        
+        #'lhood_channel_hour',
+        #'lhood_app_hour',
+        #'lhood_app_channel_hour',
+        #'lhood_os_hour'
+    ]    
+[10]    train's auc: 0.968623   h4's auc: 0.956644      h5's auc: 0.960158      h9's auc: 0.958614      h10's auc: 0.957954     h13's auc: 0.965531     h14's auc: 0.971956
+[20]    train's auc: 0.972371   h4's auc: 0.96104       h5's auc: 0.963632      h9's auc: 0.961277      h10's auc: 0.961023     h13's auc: 0.968868     h14's auc: 0.974623
+[30]    train's auc: 0.97412    h4's auc: 0.962434      h5's auc: 0.965463      h9's auc: 0.963096      h10's auc: 0.962531     h13's auc: 0.969961     h14's auc: 0.975156
+[40]    train's auc: 0.975427   h4's auc: 0.963675      h5's auc: 0.966746      h9's auc: 0.964093      h10's auc: 0.963756     h13's auc: 0.97079      h14's auc: 0.975685
+[50]    train's auc: 0.976783   h4's auc: 0.964753      h5's auc: 0.967823      h9's auc: 0.965189      h10's auc: 0.964898     h13's auc: 0.971706     h14's auc: 0.976408
+
+[115]   train's auc: 0.981139   h4's auc: 0.966736      h5's auc: 0.969638      h9's auc: 0.967221      h10's auc: 0.967047     h13's auc: 0.974154     h14's auc: 0.978856
+
+[('lhood_ip_channel_hour', 7), ('lhood_ip_app_hour', 25), ('device', 70), ('count_ip_day_device_in_test_hh', 98), ('count_ip_day_hour', 114), ('count_ip_device_hour', 126), ('co
+unt_ip_app_hour', 144), ('count_ip_day_app_in_test_hh', 157), ('count_ip_os_hour', 175), ('count_ip_day_in_test_hh', 218), ('hour', 316), ('os', 485), ('app', 551), ('channel', 
+964)]
+
+
 """
 
 
@@ -177,97 +262,10 @@ import lightgbm as lgb
 
 
 import data2
+import train2 
 
-
-#
-# TODO: delete this function and use train2.run which should be identical.
-#
-#
-#
-#
-def run(train_df, 
-        val_dfs, 
-        predictors, 
-        target,
-        categorical,
-        max_rounds):
-    
-    print('train: ', len(train_df)) 
-    
-    use_validation = val_dfs is not None and len(val_dfs) > 0
-    if use_validation:
-        for val_df_name, val_df in val_dfs.items():
-            print('{}: {}'.format(val_df_name, len(val_df)))
-
-    params = {
-              'boosting_type': 'gbdt',
-              'objective': 'binary',
-              'metric':'auc',
-              'learning_rate': 0.1,
-              'num_leaves': 31,  # we should let it be smaller than 2^(max_depth)
-              'max_depth': -1,  # -1 means no limit
-              #'min_child_samples': 100,  # Minimum number of data need in a child(min_data_in_leaf)
-              'max_bin': 255,  
-              'subsample': 0.9,  # Subsample ratio of the training instance.
-              'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
-              'bagging_freq': 1,
-              #'colsample_bytree': 0.7,  # Subsample ratio of columns when constructing each tree.
-              #'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
-              #'min_split_gain': 0,  # lambda_l1, lambda_l2 and min_gain_to_split to regularization
-              'nthread': 8,
-              'verbose': 0,
-              'scale_pos_weight':99.7, # because training data is extremely unbalanced 
-             }
-
-    dtrain = lgb.Dataset(train_df[predictors].values, 
-                         label=train_df[target].values,
-                         feature_name=predictors,
-                         categorical_feature=categorical)
-    #del train_df
-    #gc.collect()
-    
-    if use_validation:
-        valid_sets = [dtrain]
-        valid_names = ['train']
-        
-        for val_df_name, val_df in val_dfs.items():
-            dvalid = lgb.Dataset(val_df[predictors].values,
-                                 label=val_df[target].values,
-                                 feature_name=predictors,
-                                 categorical_feature=categorical)
-            valid_sets.append(dvalid)
-            valid_names.append(val_df_name)
-        best_auc_metric = valid_names[0]
-        early_stopping_rounds = 50
-        prefix = 'cv'
-    else:
-        valid_sets = [dtrain]
-        valid_names = ['train']
-        best_auc_metric = 'train'
-        early_stopping_rounds = None
-        prefix = 'train'
-
-    evals_results = {}
-    
-    model = lgb.train(params, 
-                      dtrain, 
-                      valid_sets=valid_sets, 
-                      valid_names=valid_names,
-                      evals_result=evals_results, 
-                      num_boost_round=max_rounds,
-                      early_stopping_rounds=early_stopping_rounds,
-                      verbose_eval=10, 
-                      feval=None)
-    
-    best_auc = evals_results[best_auc_metric][params['metric']][model.best_iteration - 1]        
-    out = '{}-{}-{}.pkl'.format(prefix, best_auc, datetime.now().strftime("%Y%m%d%H%M%S"))
-
-    with open(out, 'wb') as f:
-        pickle.dump([model, evals_results, params, predictors], f)
-
-    print(sorted(dict(zip(model.feature_name(), model.feature_importance())).items(), 
-                 key=operator.itemgetter(1)))
-
+VALID_ROWS = 53016937 # rows in train.csv with day == 2017-11-09             
+SEED = 0
 
 if __name__ == '__main__':
     trainval_df = data2.load('train')
@@ -290,6 +288,10 @@ if __name__ == '__main__':
         #'lhood_ip_device_hour',        
         'lhood_ip_channel_hour',
         'lhood_ip_app_hour',        
+        #'lhood_channel_hour',
+        #'lhood_app_hour',
+        #'lhood_app_channel_hour',
+        #'lhood_os_hour'
     ]
     
     # used to save memory only, as when building lgbm dataset we specify
@@ -326,4 +328,6 @@ if __name__ == '__main__':
     }
     
     iterations = 500
-    run(train_df, val_dfs, predictors, target, categorical, iterations)
+    train2.run(train_df, val_dfs, 
+        predictors, target, categorical, 
+        iterations, SEED)

@@ -19,10 +19,7 @@ logger = logging.getLogger('test')
 
 def load_model(model_fname):
     with open(model_fname, 'rb') as f:
-        #m, _, _, predictors = pickle.load(f)        
-        m, _, _ = pickle.load(f)        
-        
-    #return m, predictors
+        m, _, _, _ = pickle.load(f)
     return m
 
 def run(model_fname, out_csv, num_iteration=-1):
@@ -67,9 +64,11 @@ def run(model_fname, out_csv, num_iteration=-1):
     subm[['click_id', 'is_attributed']].to_csv(out_csv, index=False)
     print('saved ', out_csv)
 
+import fire
 if __name__ == '__main__':
-    num_iteration = -1
-    out_csv = '../tmp/subm{}.csv'.format(datetime.now().strftime("%Y%m%d%H%M%S"))
-    model = 'cv-x-20180403203602.pkl'
-    run(model, out_csv, num_iteration)
+    #num_iteration = -1
+    #out_csv = '../tmp/subm{}.csv'.format(datetime.now().strftime("%Y%m%d%H%M%S"))
+    #model = 'cv-x-20180403203602.pkl'
+    #run(model, out_csv, num_iteration)
+    fire.Fire(run)
     

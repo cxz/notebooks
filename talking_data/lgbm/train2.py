@@ -27,7 +27,8 @@ def run(train_df,
         predictors, 
         target,
         categorical,
-        max_rounds):
+        max_rounds,
+        seed):
     
     print('train: ', len(train_df)) 
     
@@ -41,15 +42,15 @@ def run(train_df,
               'objective': 'binary',
               'metric':'auc',
               'learning_rate': 0.1,
-              'num_leaves': 31,  # we should let it be smaller than 2^(max_depth)
-              'max_depth': -1,  # -1 means no limit
+              'num_leaves': 31, 
+              'max_depth': -1, 
               'max_bin': 255,  
-              'subsample': 0.9,  # Subsample ratio of the training instance.
-              'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
+              'bagging_freq': 0.8,
               'bagging_freq': 1,
+              'bagging_seed': seed,
               'nthread': 8,
               'verbose': 0,
-              'scale_pos_weight':99.7, # because training data is extremely unbalanced 
+              'scale_pos_weight':100,
              }
 
     dtrain = lgb.Dataset(train_df[predictors].values, 
@@ -102,7 +103,7 @@ def run(train_df,
                  key=operator.itemgetter(1)))
 
 
-if __name__ == '__main__':
+def run_train(days, iterations, seed):
     trainval_df = data2.load('train')
     
     target = 'is_attributed'
@@ -132,8 +133,11 @@ if __name__ == '__main__':
     gc.collect()
         
     # i'm not convinced yet restricting training days is good
-    train_df = trainval_df.loc[trainval_df.day.isin([8, 9])]
+    train_df = trainval_df.loc[trainval_df.day.isin(days)]
     val_dfs = None
     
-    run(train_df, val_dfs, predictors, target, categorical, 500)
+    run(train_df, val_dfs, predictors, target, categorical, iterations, seed)
     
+import fire    
+if __name__ == '__main__':
+    fire.Fire(run_train)
