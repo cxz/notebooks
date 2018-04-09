@@ -218,6 +218,8 @@ run9:
         #'count_ip_app_channel_hour', 
         'count_ip_day_app_in_test_hh',
         'count_ip_day_device_in_test_hh',
+        'count_app_day_in_test_hh',
+        'count_channel_day_device_in_test_hh',
         #'delta_ip_device'
         #'lhood_ip_day_in_test_hh',
         #'lhood_app_channel_day_in_test_hh',
@@ -226,9 +228,10 @@ run9:
         'lhood_ip_channel_hour',
         'lhood_ip_app_hour',        
         #'lhood_channel_hour',
-        #'lhood_app_hour',
+        'lhood_app_hour',
         #'lhood_app_channel_hour',
         #'lhood_os_hour'
+        'lhood_channel_hour',
     ]    
 [10]    train's auc: 0.968623   h4's auc: 0.956644      h5's auc: 0.960158      h9's auc: 0.958614      h10's auc: 0.957954     h13's auc: 0.965531     h14's auc: 0.971956
 [20]    train's auc: 0.972371   h4's auc: 0.96104       h5's auc: 0.963632      h9's auc: 0.961277      h10's auc: 0.961023     h13's auc: 0.968868     h14's auc: 0.974623
@@ -242,6 +245,105 @@ run9:
 unt_ip_app_hour', 144), ('count_ip_day_app_in_test_hh', 157), ('count_ip_os_hour', 175), ('count_ip_day_in_test_hh', 218), ('hour', 316), ('os', 485), ('app', 551), ('channel', 
 964)]
 
+
+run10:
+    predictors = [
+        'app', 'channel',  'device', 'os',
+        'hour', 'count_ip_day_in_test_hh', 'count_ip_day_hour',
+        'count_ip_os_hour', 'count_ip_app_hour', 
+        'count_ip_device_hour',
+        #'count_ip_app_channel_hour', 
+        'count_ip_day_app_in_test_hh',
+        'count_ip_day_device_in_test_hh',
+        'count_app_day_in_test_hh',
+        #'delta_ip_device'
+        #'lhood_ip_day_in_test_hh',
+        #'lhood_app_channel_day_in_test_hh',
+        #'lhood_ip_hour',
+        #'lhood_ip_device_hour',        
+        'lhood_ip_channel_hour',
+        'lhood_ip_app_hour',        
+        #'lhood_channel_hour',
+        #'lhood_app_hour',
+        #'lhood_app_channel_hour',
+        #'lhood_os_hour'
+    ]
+[10]    train's auc: 0.968668   h4's auc: 0.957678      h5's auc: 0.960611      h9's auc: 0.95842       h10's auc: 0.95804      h13's auc: 0.965492     h14's auc: 0.971947
+[20]    train's auc: 0.972548   h4's auc: 0.96153       h5's auc: 0.963954      h9's auc: 0.961619      h10's auc: 0.961142     h13's auc: 0.968787     h14's auc: 0.974717
+[30]    train's auc: 0.974141   h4's auc: 0.962751      h5's auc: 0.965674      h9's auc: 0.9632        h10's auc: 0.962947     h13's auc: 0.969987     h14's auc: 0.974966
+[40]    train's auc: 0.97551    h4's auc: 0.963978      h5's auc: 0.966964      h9's auc: 0.964108      h10's auc: 0.964154     h13's auc: 0.971282     h14's auc: 0.975743
+[50]    train's auc: 0.97684    h4's auc: 0.964899      h5's auc: 0.968028      h9's auc: 0.965415      h10's auc: 0.965241     h13's auc: 0.972055     h14's auc: 0.976437
+[60]    train's auc: 0.978188   h4's auc: 0.966052      h5's auc: 0.96883       h9's auc: 0.966201      h10's auc: 0.966062     h13's auc: 0.972977     h14's auc: 0.97731
+[70]    train's auc: 0.979029   h4's auc: 0.966578      h5's auc: 0.969278      h9's auc: 0.966774      h10's auc: 0.966589     h13's auc: 0.973616     h14's auc: 0.97791
+[80]    train's auc: 0.979693   h4's auc: 0.966871      h5's auc: 0.969585      h9's auc: 0.96711       h10's auc: 0.966865     h13's auc: 0.974148     h14's auc: 0.978396
+[90]    train's auc: 0.98023    h4's auc: 0.967076      h5's auc: 0.969723      h9's auc: 0.967309      h10's auc: 0.966975     h13's auc: 0.974305     h14's auc: 0.97856
+[100]   train's auc: 0.980688   h4's auc: 0.967064      h5's auc: 0.969718      h9's auc: 0.967215      h10's auc: 0.967141     h13's auc: 0.974449     h14's auc: 0.978711
+[110]   train's auc: 0.981148   h4's auc: 0.967039      h5's auc: 0.969814      h9's auc: 0.967236      h10's auc: 0.967138     h13's auc: 0.974538     h14's auc: 0.978798
+[120]   train's auc: 0.98148    h4's auc: 0.967133      h5's auc: 0.969872      h9's auc: 0.967277      h10's auc: 0.967235     h13's auc: 0.974602     h14's auc: 0.978839
+[130]   train's auc: 0.981797   h4's auc: 0.967209      h5's auc: 0.970003      h9's auc: 0.967265      h10's auc: 0.967267     h13's auc: 0.97464      h14's auc: 0.978966
+[140]   train's auc: 0.982167   h4's auc: 0.967246      h5's auc: 0.970019      h9's auc: 0.967291      h10's auc: 0.967313     h13's auc: 0.974685     h14's auc: 0.979
+[150]   train's auc: 0.982499   h4's auc: 0.967252      h5's auc: 0.970074      h9's auc: 0.967322      h10's auc: 0.967367     h13's auc: 0.974686     h14's auc: 0.979049
+[160]   train's auc: 0.982809   h4's auc: 0.967188      h5's auc: 0.970039      h9's auc: 0.967301      h10's auc: 0.967312     h13's auc: 0.974642     h14's auc: 0.979032
+[170]   train's auc: 0.983063   h4's auc: 0.967181      h5's auc: 0.970029      h9's auc: 0.967283      h10's auc: 0.967287     h13's auc: 0.974605     h14's auc: 0.978988
+[180]   train's auc: 0.983264   h4's auc: 0.967078      h5's auc: 0.969997      h9's auc: 0.967196      h10's auc: 0.967312     h13's auc: 0.974383     h14's auc: 0.978893
+[190]   train's auc: 0.983446   h4's auc: 0.966993      h5's auc: 0.969889      h9's auc: 0.96707       h10's auc: 0.96721      h13's auc: 0.974127     h14's auc: 0.978705
+Early stopping, best iteration is:
+[147]   train's auc: 0.982412   h4's auc: 0.967279      h5's auc: 0.970081      h9's auc: 0.967342      h10's auc: 0.96735      h13's auc: 0.974733     h14's auc: 0.979053
+[('lhood_ip_channel_hour', 19), ('count_app_day_in_test_hh', 70), ('device', 85), ('lhood_ip_app_hour', 110), ('count_ip_day_device_in_test_hh', 115), ('count_ip_device_hour', 169), ('count_ip_day_hour', 175), ('count_ip_day_app_in_test_hh', 200), ('count_ip_app_hour', 208), ('count_ip_day_in_test_hh', 265), ('count_ip_os_hour', 267), ('hour', 399), ('app', 574), ('os', 589), ('channel', 1165)]
+
+run11:
+    same as 10, setting lhood* as categorical.
+
+
+
+[151]   train's auc: 0.982982   h4's auc: 0.967477      h5's auc: 0.969956      h9's auc: 0.968105      h10's auc: 0.968168     h13's auc: 0.975497     h14's auc: 0.979962
+[('lhood_ip_channel_hour', 18), ('binip_lhood', 19), ('count_app_day_in_test_hh', 76), ('device', 79), ('lhood_ip_app_hour', 82), ('count_ip_day_device_in_test_hh', 106), ('count_ip_device_hour', 107), ('count_ip_day_hour', 138), ('count_ip_day_in_test_hh', 190), ('count_ip_day_app_in_test_hh', 201), ('count_ip_app_hour', 213), ('count_ip_os_hour', 271), ('hour', 372), ('binip', 416), ('app', 548), ('os', 574), ('channel', 1120)]
+done  2018-04-06 17:43:19.266696
+
+
+run12: x1 features with robustscaler (using day==9 to calculate target encoding)
+Early stopping, best iteration is:
+[197]   train's auc: 0.981368   h4's auc: 0.968385      h5's auc: 0.971294      h9's auc: 0.969402      h10's auc: 0.96942      h13's auc: 0.976414     h14's auc: 0.980387
+[('count_app_day_in_test_hh', 23), ('count_ip_day_device_in_test_hh', 31), ('x1_app_device', 32), ('device', 35), ('count_ip_device_hour', 35), ('count_ip_day_hour', 41), ('count_ip_app_hour', 68), ('count_ip_os_hour', 81), ('x1_ip', 98), ('count_ip_day_app_in_test_hh', 99), ('x1_app_channel', 100), ('x1_app_os', 108), ('count_ip_day_in_test_hh', 135), ('hour', 268), ('app', 292), ('binip', 308), ('os', 334), ('channel', 670)]
+done  2018-04-09 01:10:53.435381
+
+run13: x1+x2 features with robustscaler (using day==9 to calculate target encoding)
+[216]   train's auc: 0.981835   h4's auc: 0.968542      h5's auc: 0.971319      h9's auc: 0.969311      h10's auc: 0.968952     h13's auc: 0.976059     h14's auc: 0.980153
+[('x2_ip_app_channel_var_day', 0), 
+('x2_ip_app_day_hour_count_channel', 0), 
+('x2_ip_day_channel_var_hour', 0), 
+('x2_ip_day_hour_count_channel', 0), 
+('x2_app_AvgViewPerDistinct_ip', 3), 
+('x2_app_count_channel', 9), 
+('x2_channel_count_app', 11), 
+('x2_ip_app_channel_mean_hour', 14), 
+('count_app_day_in_test_hh', 15), 
+('x2_ip_app_count_channel', 21), 
+('x2_ip_app_os_count_channel', 28), 
+('x1_app_device', 30), 
+('x2_ip_app_os_var_hour', 32), 
+('device', 36), 
+('count_ip_device_hour', 37), 
+('count_ip_day_device_in_test_hh', 39), 
+('count_ip_day_hour', 51), 
+('count_ip_day_app_in_test_hh', 77), 
+('count_ip_app_hour', 80), 
+('count_ip_os_hour', 85), 
+('x1_ip', 86), 
+('x1_app_channel', 106), 
+('x1_app_os', 109), 
+('count_ip_day_in_test_hh', 137), 
+('app', 290), 
+('hour', 297), 
+('binip', 342), 
+('os', 350), 
+('channel', 739)]
+
+params = {
+    'num_leaves': 15,
+    'max_depth': 5,    
+    'max_bin': 255,
+}
 
 """
 
@@ -258,64 +360,46 @@ import pandas as pd
 import numpy as np
 import lightgbm as lgb
 
-# from sklearn.model_selection import train_test_split 
-
-
 import data2
 import train2 
 
-VALID_ROWS = 53016937 # rows in train.csv with day == 2017-11-09             
+from dataset import *
+from util import info
+
 SEED = 0
 
 if __name__ == '__main__':
     trainval_df = data2.load('train')
     
     target = 'is_attributed'
-    categorical = ['app', 'device', 'os', 'channel', 'hour']
+    categorical = ['app', 'device', 'os', 'channel', 'hour', 'binip']
+
+    # faster feedback
+    train_cond = (trainval_df.day == 8) # & (trainval_df.hour.isin([4,5,9,10,13,14]))
+    train_df = trainval_df[train_cond] 
+    #train_df = trainval_df.iloc[:-VALID_ROWS]
     
-    predictors = [
-        'app', 'channel',  'device', 'os',
-        'hour', 'count_ip_day_in_test_hh', 'count_ip_day_hour',
-        'count_ip_os_hour', 'count_ip_app_hour', 
-        'count_ip_device_hour',
-        #'count_ip_app_channel_hour', 
-        'count_ip_day_app_in_test_hh',
-        'count_ip_day_device_in_test_hh',
-        #'delta_ip_device'
-        #'lhood_ip_day_in_test_hh',
-        #'lhood_app_channel_day_in_test_hh',
-        #'lhood_ip_hour',
-        #'lhood_ip_device_hour',        
-        'lhood_ip_channel_hour',
-        'lhood_ip_app_hour',        
-        #'lhood_channel_hour',
-        #'lhood_app_hour',
-        #'lhood_app_channel_hour',
-        #'lhood_os_hour'
-    ]
-    
+    #info('shuffling train')
+    #train_df = train_df.iloc[np.random.permutation(len(train_df))]
+        
     # used to save memory only, as when building lgbm dataset we specify
     # columns to be used explicitly
     excluded = [
         'click_time',
         'ip',
-        #'day',
-        #'delta_ip_device', 
-        #'delta_ip_app_device',
-        #'delta_ip_app_device_os', 
-        #'delta_ip_app_device_os_channel'
+        'day'
     ]
     
     for column in excluded:
         del trainval_df[column]
-        
+    
+    predictors = list(sorted([c for c in trainval_df.columns if c not in ['is_attributed']]))
+    
     gc.collect()
      
-    # faster feedback
-    train_df = trainval_df.loc[trainval_df.day == 8]    
-    #train_df = trainval_df.iloc[:-VALID_ROWS]
     
-    
+    gc.collect()
+        
     val_df = trainval_df.iloc[-VALID_ROWS:]
     
     val_dfs = {
@@ -327,7 +411,17 @@ if __name__ == '__main__':
         'h14': val_df[val_df.hour == 14]
     }
     
+    params = {
+        'num_leaves': 15,
+        'max_depth': 5,    
+        'max_bin': 255
+    }
+    
+    info('predictors: %s' % ','.join(predictors))
+    
     iterations = 500
     train2.run(train_df, val_dfs, 
         predictors, target, categorical, 
-        iterations, SEED)
+        iterations, SEED, param_overrides=params)
+    
+    

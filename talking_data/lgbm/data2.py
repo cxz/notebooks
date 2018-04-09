@@ -1,4 +1,5 @@
 import os
+import glob
 import gc
 import pickle
 import logging
@@ -9,88 +10,42 @@ import pandas as pd
 import numpy as np
 import feather
 
-TRAIN_ROWS = 184903890
-VALID_ROWS = 53016937 # rows in train.csv with day == 2017-11-09             
-TEST_ROWS_V0 = 57537505
-TEST_ROWS = 18790469
-CACHE = '../cache'
-TMP = '/kaggle1/td-cache'
+from sklearn.preprocessing import RobustScaler
 
-BASE_PATH = '../input'
-TRAIN_CSV = os.path.join(BASE_PATH, 'train.csv')
-TEST_CSV = os.path.join(BASE_PATH, 'test_v0.csv') # v0 with full rows
+from dataset import *
+from util import *
 
-logger = logging.getLogger('data2')
+def load_base(kind):
+    base_fname = os.path.join(CACHE, '{}_base.feather'.format(kind))
+    info('loading base %s' % base_fname)
+    df = feather.read_dataframe(base_fname)
+    return df
 
 def load(kind):
-    base_fname = os.path.join(TMP, '{}_base.feather'.format(kind))
-    print('loading base ', base_fname, datetime.now())
-    df = feather.read_dataframe(base_fname)
-
-    for group in [
-            ['ip', 'day', 'in_test_hh'],
-            ['ip', 'day', 'hour'],
-            ['ip', 'os', 'hour'],
-            ['ip', 'app',  'hour'],
-            ['ip', 'device', 'hour'],
-            #['ip', 'app', 'channel', 'hour'],
-            ['ip', 'day', 'app', 'in_test_hh'],
-            ['ip', 'day', 'device', 'in_test_hh'],
-    ]:
-        column = 'count_{}'.format('_'.join(group))
-        fname = os.path.join(TMP, '{}_{}.feather'.format(kind, column))
-
-        print('loading ', fname, datetime.now())
-        extra_df = feather.read_dataframe(fname)
-        df[column] = extra_df[column]
-
-    for group in [
-            #['ip', 'device'],
-            #['ip', 'app', 'device'],
-            #['ip', 'app', 'device', 'os'],
-            #['ip', 'device', 'os', 'channel']
-    ]:
-        column = 'delta_{}'.format('_'.join(group))
-        fname = os.path.join(TMP, '{}_{}.feather'.format(kind, column))
-
-        print('loading ', fname, datetime.now())
-        extra_df = feather.read_dataframe(fname)
-        if column not in extra_df.columns:
-            column = column.replace('_', '-')  #TODO: remove
-        df[column] = extra_df[column]
+    df = load_base(kind)
+    
+    fnames = []
+    fnames.extend(glob.glob(os.path.join(CACHE, '%s_count*.feather' % kind)))
+    fnames.extend(glob.glob(os.path.join(CACHE, '%s_x1_*.feather' % kind)))
+    fnames.extend(glob.glob(os.path.join(CACHE, '%s_x2_*.feather' % kind)))
+    fnames.extend(glob.glob(os.path.join(CACHE, '%s_binip.feather' % kind)))
         
-    for group in [
-            #['ip', 'device'],
-            #['ip', 'device', 'os', 'channel']
-    ]:
-        column = 'mtbc_{}'.format('_'.join(group))
-        fname = os.path.join(TMP, '{}_{}.feather'.format(kind, column))
+    print(len(fnames))
+    for fname in fnames:
+        fpath = os.path.join(CACHE, fname)
 
-        print('loading ', fname, datetime.now())
+        info('loading %s %s' %(fname, datetime.now()))
         extra_df = feather.read_dataframe(fname)
-        df[column] = extra_df[column]
+        for c in extra_df.columns:
+            df[c] = extra_df[c]
         
-    for group in [
-        #['ip', 'day', 'in_test_hh'],
-        #['app', 'channel', 'day', 'in_test_hh'],
-        #['ip', 'hour'],
-        #['ip', 'device', 'hour'],
-        ['ip', 'channel', 'hour'],
-        ['ip', 'app', 'hour'],      
-        #['channel', 'hour'],
-        #['app', 'hour'],
-        #['app', 'channel', 'hour'],
-        #['os', 'hour']        
-    ]:
-        column = 'lhood_{}'.format('_'.join(group))
-        fname = os.path.join(TMP, '{}_{}.feather'.format(kind, column))
-
-        print('loading ', fname, datetime.now())
-        extra_df = feather.read_dataframe(fname)
-        df[column] = extra_df[column]
-    print('loaded. ', datetime.now()) 
+    info('loaded. %s' % datetime.now()) 
     return df
 
 def load_click_ids():
     click_ids = pd.read_csv('../input/test_v0.csv', usecols=['click_id']).click_id.values
     return click_ids
+
+if __name__ == '__main__':
+    df = load('train')
+    print(df.info())

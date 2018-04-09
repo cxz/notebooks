@@ -17,18 +17,17 @@ from tqdm import tqdm
 
 import feather
 
+from util import info
 from dataset import *
-
-logger = logging.getLogger("prepare")
 
 def process(kind):
     basename = {'train': kind, 'test': 'test_v0'}
     fname = os.path.join(BASE_PATH, '{}.csv'.format(basename[kind]))
-    logger.info('loading %s' % fname)
+    info('loading %s' % fname)
     
     df = pd.read_csv(fname, dtype=DTYPES, parse_dates=['click_time'])
     
-    logger.info('hour/day')
+    info('hour/day')
     df['hour'] = df.click_time.dt.hour.astype('uint8')
     df['day'] = df.click_time.dt.day.astype('uint8')
     
@@ -47,14 +46,15 @@ def process(kind):
     
     df.reset_index(drop=True, inplace=True)
     
-    logger.info(df.info())
+    info(df.info())
 
     out_fname = os.path.join(CACHE, '{}_base.feather'.format(kind))
-    logger.info("writing %s" % out_fname)
+    info("writing %s" % out_fname)
     feather.write_dataframe(df, out_fname)
              
-    logger.info('done.')
+    info('done.')
 
 
 if __name__ == '__main__':
     process('train')
+    process('test')

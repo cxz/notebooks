@@ -28,7 +28,8 @@ def run(train_df,
         target,
         categorical,
         max_rounds,
-        seed):
+        seed,
+        param_overrides={}):
     
     print('train: ', len(train_df)) 
     
@@ -37,7 +38,7 @@ def run(train_df,
         for val_df_name, val_df in val_dfs.items():
             print('{}: {}'.format(val_df_name, len(val_df)))
 
-    params = {
+    default_params = {
               'boosting_type': 'gbdt',
               'objective': 'binary',
               'metric':'auc',
@@ -52,6 +53,8 @@ def run(train_df,
               'verbose': 0,
               'scale_pos_weight':100,
              }
+    
+    params = {**default_params, **param_overrides}
 
     dtrain = lgb.Dataset(train_df[predictors].values, 
                          label=train_df[target].values,
@@ -83,6 +86,7 @@ def run(train_df,
 
     evals_results = {}
     
+    print('train ', datetime.now())
     model = lgb.train(params, 
                       dtrain, 
                       valid_sets=valid_sets, 
@@ -101,6 +105,8 @@ def run(train_df,
 
     print(sorted(dict(zip(model.feature_name(), model.feature_importance())).items(), 
                  key=operator.itemgetter(1)))
+    
+    print('done ', datetime.now())
 
 
 def run_train(days, iterations, seed):
