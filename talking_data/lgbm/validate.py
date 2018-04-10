@@ -345,6 +345,13 @@ params = {
     'max_bin': 255,
 }
 
+
+[102]   train's auc: 0.982155   h4's auc: 0.968016      h5's auc: 0.971814      h9's auc: 0.969552      h10's auc: 0.969672     h13's auc: 0.976022     h14's auc: 0.980312
+[('x2_ip_app_os_var_hour', 3), ('x2_app_count_channel', 7), ('count_ip_app_channel_hour', 10), ('x2_ip_app_count_channel', 10), ('x2_ip_app_channel_mean_hour', 11), ('count_ip_app_hour', 13), ('
+x2_ip_app_os_count_channel', 17), ('device', 22), ('x1_app_device', 25), ('x1_app_os_hour', 26), ('x1_app_channel_hour', 27), ('x1_ip', 27), ('count_ip_os_hour', 37), ('count_ip_device_hour', 47
+), ('count_ip_day_app_hour', 52), ('hour', 53), ('x1_app_os', 59), ('x1_app_channel', 70), ('count_ip_day_hour', 109), ('app', 115), ('binip', 162), ('os', 176), ('channel', 350)]
+done  2018-04-10 02:39:24.828795
+
 """
 
 
@@ -377,14 +384,10 @@ if __name__ == '__main__':
     categorical = ['app', 'device', 'os', 'channel', 'hour', 'binip']
 
     # faster feedback
-    train_cond = (trainval_df.day == 8) # & (trainval_df.hour.isin([4,5,9,10,13,14]))
+    train_cond = (trainval_df.day == 8) & (trainval_df.hour.isin([4,5,9,10,13,14]))
     train_df = trainval_df[train_cond] 
     #train_df = trainval_df.iloc[:-VALID_ROWS]
-    
-    for c in ['x2_ip_app_count_channel']: 
-        info("scaling %s" % c)
-        train_df[c] = RobustScaler().fit_transform(train_df[c].fillna(0).values.reshape(-1, 1))
-    
+        
     #info('shuffling train')
     #train_df = train_df.iloc[np.random.permutation(len(train_df))]
         

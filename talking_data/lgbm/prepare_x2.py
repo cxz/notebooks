@@ -27,14 +27,14 @@ def process(kind):
         #{'groupby': ['ip','app','day','hour'], 'select': 'channel', 'agg': 'count'},
         {'groupby': ['ip','app','channel'], 'select': 'hour', 'agg': 'mean'}, 
 
-        {'groupby': ['app'], 
-         'select': 'ip', 
-         'agg': lambda x: float(len(x)) / len(x.unique()), 
-         'agg_name': 'AvgViewPerDistinct'
-        },
+        #{'groupby': ['app'], 
+        # 'select': 'ip', 
+        # 'agg': lambda x: float(len(x)) / len(x.unique()), 
+        # 'agg_name': 'AvgViewPerDistinct'
+        #},
         
         {'groupby': ['app'], 'select': 'channel', 'agg': 'count'},
-        {'groupby': ['channel'], 'select': 'app', 'agg': 'count'}
+        #{'groupby': ['channel'], 'select': 'app', 'agg': 'count'}
     ]
         
     # Apply all the groupby transformations

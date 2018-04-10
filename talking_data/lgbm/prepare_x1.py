@@ -134,8 +134,17 @@ def process(kind):
         ['app', 'channel'],
         ['app', 'os'],
         ['app', 'device'],
+        
+        #triple
+        ['app', 'channel', 'hour'],
+        ['app', 'os', 'hour']
           
     ]:
+        out_column = "x1_{}".format('_'.join(group))
+        out_fname = os.path.join(CACHE, '{}_{}.feather'.format(kind, out_column))
+        if os.path.exists(out_fname):
+            continue
+            
         info('loading base')
         df = load_base(kind)
 
@@ -144,12 +153,7 @@ def process(kind):
         source_cond = (df.day.isin([9])) & df.hour.isin([4,5,9,10,13,14])
         source_df = df[source_cond]
         target_df = df if kind == 'train' else load_base('test')
-        info('source: %d, target: %d' %(len(source_df), len(target_df)))
-        
-        out_column = "x1_{}".format('_'.join(group))
-        out_fname = os.path.join(CACHE, '{}_{}.feather'.format(kind, out_column))
-        if os.path.exists(out_fname):
-            continue
+        info('source: %d, target: %d' %(len(source_df), len(target_df)))        
 
         print('preparing ', out_column, datetime.now())
         out = _prepare_x1(source_df, target_df, group, out_column, np.float32)
