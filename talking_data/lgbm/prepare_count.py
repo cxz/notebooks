@@ -10,8 +10,6 @@ from datetime import datetime
 import pandas as pd
 import numpy as np
 import feather
-
-from sklearn.preprocessing import RobustScaler
     
 from data2 import load_base
 from util import *
@@ -19,31 +17,39 @@ from dataset import *
 
 def _prepare_count(source_df, target_df, group, out_column, dtype):    
     helper = 'is_attributed'
-    gp = source_df[group + [helper]].groupby(by=group)[helper] \
-        .count() \
+    
+    group_object = source_df[group + [helper]].groupby(group)
+    
+    group_sizes = group_object.size()
+    log_group = 100000 # 1000 views -> 60% confidence, 100 views -> 40% confidence 
+    
+    info(">> Calculating confidence-weighted rate for: {}.\n   Saving to: {}. Group Max /Mean / Median / Min: {} / {} / {} / {}".format(
+        group, out_column, 
+        group_sizes.max(), 
+        np.round(group_sizes.mean(), 2),
+        np.round(group_sizes.median(), 2),
+        group_sizes.min()
+    ))
+
+    # Aggregation function
+    def rate_calculation(x):
+        """Calculate the attributed rate. Scale by confidence"""
+        rate = x.sum() / float(x.count())
+        conf = np.min([1, np.log(x.count()) / log_group])
+        return rate * conf
+
+    # Perform the merge
+    gp = group_object[helper] \
+        .apply(rate_calculation) \
         .reset_index() \
         .rename(index=str, columns={helper: out_column})
-    out = target_df[group].merge(gp, on=group, how='left')    
+        
+    out = target_df[group].merge(gp, on=group, how='left')
     out = out[[out_column]].astype(dtype)
     gc.collect()
     return out  
 
-def _fit_save_scaler(df, column):
-    scaler = RobustScaler()
-        
-    scaler.fit(df[column].fillna(0).values.reshape(-1, 1))
-    
-    scaler_fname = os.path.join(CACHE, "scaler_%s.pkl" % column)
-    with open(scaler_fname, 'wb') as f:
-        pickle.dump(scaler, f)
-        
-def _scale(df, column):
-    scaler_fname = os.path.join(CACHE, "scaler_%s.pkl" % column)
-    with open(scaler_fname, 'rb') as f:
-        scaler = pickle.load(f)
-            
-    df[column] = scaler.transform(df[column].fillna(0).values.reshape(-1, 1))
-    
+ 
 def process(kind):    
     for group in [
         #['ip', 'day', 'in_test_hh'],
@@ -62,9 +68,16 @@ def process(kind):
         info('loading base')
         df = load_base(kind)
 
-        source_cond = (df.day.isin([8, 9])) & df.hour.isin([4,5,9,10,13,14])
-        source_df = df[source_cond] if kind == 'train' else df
-        target_df = df
+        binip = feather.read_dataframe(os.path.join(CACHE, '{}_binip.feather'.format(kind)))
+        df['binip'] = binip['binip'].values
+        
+        del binip
+        gc.collect()
+        
+        source_cond = (df.day.isin([9])) & df.hour.isin([4,5,9,10,13,14])
+        source_df = df[source_cond] # both train & test
+        target_df = df if kind == 'train' else load_base('test')
+        
         info('source: %d, target: %d' %(len(source_df), len(target_df)))
 
         out_column = 'count_{}'.format('_'.join(group))
@@ -79,15 +92,7 @@ def process(kind):
         info(out.info())
         info(out[out_column].describe())
 
-        #if kind == 'train':
-        #    info("fitting scaler")
-        #    _fit_save_scaler(out, out_column)
-
         info(out.info())
-
-        #info("applying scaler")
-        #_scale(out, out_column)
-        #out[out_column] = out[out_column].astype(np.float32)
 
         info(out[out_column].describe())
 
