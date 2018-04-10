@@ -368,6 +368,8 @@ from util import info
 
 SEED = 0
 
+from sklearn.preprocessing import RobustScaler 
+
 if __name__ == '__main__':
     trainval_df = data2.load('train')
     
@@ -378,6 +380,10 @@ if __name__ == '__main__':
     train_cond = (trainval_df.day == 8) # & (trainval_df.hour.isin([4,5,9,10,13,14]))
     train_df = trainval_df[train_cond] 
     #train_df = trainval_df.iloc[:-VALID_ROWS]
+    
+    for c in ['x2_ip_app_count_channel']: 
+        info("scaling %s" % c)
+        train_df[c] = RobustScaler().fit_transform(train_df[c].fillna(0).values.reshape(-1, 1))
     
     #info('shuffling train')
     #train_df = train_df.iloc[np.random.permutation(len(train_df))]
@@ -392,14 +398,13 @@ if __name__ == '__main__':
     
     for column in excluded:
         del trainval_df[column]
+        
+    #apply scaler to x1
     
     predictors = list(sorted([c for c in trainval_df.columns if c not in ['is_attributed']]))
     
     gc.collect()
-     
-    
-    gc.collect()
-        
+             
     val_df = trainval_df.iloc[-VALID_ROWS:]
     
     val_dfs = {
