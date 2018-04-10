@@ -29,6 +29,8 @@ def load(kind):
     fnames.extend(glob.glob(os.path.join(CACHE, '%s_x1_*.feather' % kind)))
     fnames.extend(glob.glob(os.path.join(CACHE, '%s_x2_*.feather' % kind)))
     fnames.extend(glob.glob(os.path.join(CACHE, '%s_binip.feather' % kind)))
+    #fnames.extend(glob.glob(os.path.join(CACHE, '%s_x3_*.feather' % kind)))
+    fnames.extend(glob.glob(os.path.join(CACHE, '%s_x4_*.feather' % kind)))
         
     for fname in fnames:
         fpath = os.path.join(CACHE, fname)

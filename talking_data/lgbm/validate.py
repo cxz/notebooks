@@ -352,6 +352,19 @@ x2_ip_app_os_count_channel', 17), ('device', 22), ('x1_app_device', 25), ('x1_ap
 ), ('count_ip_day_app_hour', 52), ('hour', 53), ('x1_app_os', 59), ('x1_app_channel', 70), ('count_ip_day_hour', 109), ('app', 115), ('binip', 162), ('os', 176), ('channel', 350)]
 done  2018-04-10 02:39:24.828795
 
+
+run13: added x3
+[86]    train's auc: 0.981497   h4's auc: 0.969227      h5's auc: 0.972491      h9's auc: 0.970777      h10's auc: 0.970672     h13's auc: 0.9774       h14's auc: 0.981656
+[('x3_binip', 0), ('x2_ip_app_channel_mean_hour', 1), ('x2_app_count_channel', 2), ('x2_ip_app_count_channel', 2), ('x2_ip_app_os_var_hour', 2), ('x2_ip_app_os_count_chann
+el', 6), ('count_ip_app_channel_hour', 7), ('count_ip_app_hour', 7), ('x3_binip_app_channel_hour', 11), ('x1_app_os_hour', 14), ('x3_binip_hour', 14), ('x3_binip_app_os', 
+15), ('device', 18), ('x1_app_channel_hour', 19), ('x3_binip_app_os_hour', 20), ('x1_app_channel', 21), ('x1_app_device', 22), ('count_ip_os_hour', 23), ('x1_ip', 23), ('h
+our', 33), ('count_ip_device_hour', 37), ('x1_app_os', 44), ('count_ip_day_app_hour', 50), ('x3_binip_app_channel', 61), ('app', 97), ('count_ip_day_hour', 97), ('binip', 
+126), ('os', 147), ('channel', 285)]
+
+run14: added x4 with all days except 8 ((df.day.isin([6, 7, 9])) & df.hour.isin([4,5,9,10,13,14]))
+
+[85]    train's auc: 0.981486   h4's auc: 0.969668      h5's auc: 0.973027      h9's auc: 0.971214      h10's auc: 0.971095     h13's auc: 0.977906     h14's auc: 0.982335
+[('x2_app_count_channel', 0), ('x2_ip_app_count_channel', 0), ('x2_ip_app_os_var_hour', 2), ('x2_ip_app_channel_mean_hour', 4), ('x2_ip_app_os_count_channel', 6), ('count_ip_app_channel_hour', 10), ('count_ip_app_hour', 10), ('x4_binip_hour', 10), ('x1_app_os_hour', 16), ('x4_binip_app_channel_hour', 17), ('count_ip_os_hour', 18), ('x1_app_channel_hour', 18), ('x4_binip_app_os', 18), ('device', 19), ('x1_app_channel', 21), ('x1_ip', 22), ('x1_app_device', 23), ('count_ip_device_hour', 27), ('x4_binip_app_os_hour', 31), ('hour', 35), ('x1_app_os', 46), ('count_ip_day_app_hour', 54), ('x4_binip_app_channel', 58), ('app', 84), ('count_ip_day_hour', 102), ('binip', 119), ('os', 132), ('channel', 288)]
 """
 
 

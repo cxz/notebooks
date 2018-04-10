@@ -34,7 +34,8 @@ def _prepare_count(source_df, target_df, out_column):
 def process(kind):
     df = load_base('train') # calculate bins based on train
     
-    source_df = df[df.day==9] if kind == 'train' else df
+    source_cond = (df.day == 9)  # both train/test
+    source_df = df[source_cond]
     target_df = load_base('test') if kind == 'test' else df
     
     out_column = 'binip'
