@@ -87,6 +87,8 @@ def run(train_df,
     evals_results = {}
     
     print('train ', datetime.now())
+    print('params: ', params)
+    
     model = lgb.train(params, 
                       dtrain, 
                       valid_sets=valid_sets, 

@@ -13,6 +13,12 @@ run 15:
 [100]   train's auc: 0.980078   h4's auc: 0.969854      h5's auc: 0.974957      h9's auc: 0.969743      h10's auc: 0.971118     h13's auc: 0.97577      h14's auc: 0.982264
 [('count_ip_app_channel_hour', 0), ('count_ip_day_app_hour', 0), ('count_ip_day_hour', 0), ('x2_ip_app_channel_mean_hour', 1), ('count_ip_app_hour', 2), ('x2_app_count_channel', 2), ('x2_ip_app_os_var_hour', 2), ('count_ip_os_hour', 3), ('x4_binip_hour', 8), ('x2_ip_app_os_count_channel', 10), ('x1_app_os_hour', 12), ('device', 14), ('x1_app_device', 18), ('x2_ip_app_count_channel', 18), ('count_ip_device_hour', 20), ('x1_app_channel_hour', 23), ('x4_binip_app_os_hour', 24), ('hour', 25), ('x4_binip_app_channel_hour', 25), ('x4_binip_app_os', 26), ('x1_app_channel', 28), ('x1_app_os', 43), ('x1_ip', 46), ('app', 54), ('x4_binip_app_channel', 79), ('binip', 82), ('os', 96), ('channel', 221)]
 
+run16:
+[70]    train's auc: 0.980282   h4's auc: 0.971428      h5's auc: 0.975672      h9's auc: 0.974172      h10's auc: 0.971081     h13's auc: 0.978723     h14's auc: 0.983168
+params = { 'num_leaves': 63, 'max_depth': 5, 'max_bin': 255}
+[57]    train's auc: 0.978996   h4's auc: 0.971117      h5's auc: 0.975262      h9's auc: 0.973577      h10's auc: 0.972468     h13's auc: 0.980032     h14's auc: 0.98388
+[('count_ip_app_channel_hour', 3), ('count_ip_app_hour', 6), ('count_ip_os_hour', 6), ('x2_ip_app_os_var_hour', 9), ('x2_app_count_channel', 10), ('x4_binip_hour', 12), ('x2_ip_app_channel_mean_hour', 14), ('x2_ip_app_os_count_channel', 20), ('x1_app_os_hour', 21), ('x1_app_device', 30), ('count_ip_device_hour', 32), ('x4_binip_app_channel_hour', 35), ('device', 36), ('hour', 39), ('x2_ip_app_count_channel', 39), ('x1_app_channel_hour', 43), ('x4_binip_app_os_hour', 44), ('x1_app_channel', 54), ('x4_binip_app_os', 57), ('x1_app_os', 73), ('x1_ip', 89), ('x4_binip_app_channel', 105), ('app', 127), ('binip', 218), ('os', 243), ('channel', 402)]
+
 """
 
 
@@ -81,9 +87,9 @@ if __name__ == '__main__':
     }
     
     params = {
-        'num_leaves': 15,
-        'max_depth': 5,    
-        'max_bin': 255
+        'num_leaves': 63                                                                                                                                                                            ,
+        'max_depth': 5,
+        'max_bin': 255        
     }
     
     info('predictors: %s' % ','.join(predictors))

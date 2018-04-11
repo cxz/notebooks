@@ -19,14 +19,16 @@ import prepare_lhood
 import prepare_count_delta
 import prepare_x1
 import prepare_x2
+import prepare_x4
 
 def prepare(kind):
     prepare_base.process(kind)
-    # prepare_binip(kind)
+    prepare_binip(kind)
     prepare_count.process(kind)
-    # prepare_x1.process(df, kind)
-    # prepare_x2.process(df, kind)
+    prepare_x1.process(df, kind)
+    prepare_x2.process(df, kind)
+    prepare_x4.process(df, kind)
 
 if __name__ == '__main__':
-    prepare('train')
-    #prepare('test')
+    # prepare('train')
+    prepare('test')
