@@ -87,7 +87,7 @@ if __name__ == '__main__':
     }
     
     params = {
-        'num_leaves': 63                                                                                                                                                                            ,
+        'num_leaves': 63,
         'max_depth': 5,
         'max_bin': 255        
     }

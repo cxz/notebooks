@@ -16,48 +16,51 @@ from util import *
 from dataset import *
 
        
-def _prepare_x4(source_df, target_df, group, out_column, dtype):    
+def _prepare_x4(kind, source_df, target_df, group, out_column, dtype):    
     out = target_df[group + ['day']]  
 
-    # Find frequency of is_attributed for each unique value in column
-    freqs = {}
+    group_fname = 'x4_group_{}'.format('_'.join(group))
+    group_fpath = os.path.join(CACHE, group_fname)
 
-    # Perform the groupby
-    group_object = source_df.groupby(group)
+    if kind == 'train':
+        # Perform the groupby
+        group_object = source_df.groupby(group)
 
-    # Group sizes    
-    group_sizes = group_object.size()
-    log_group = 100000 # 1000 views -> 60% confidence, 100 views -> 40% confidence 
-    info(">> Calculating confidence-weighted rate for: {}.\n   Saving to: {}. Group Max /Mean / Median / Min: {} / {} / {} / {}".format(
-        group, out_column, 
-        group_sizes.max(), 
-        np.round(group_sizes.mean(), 2),
-        np.round(group_sizes.median(), 2),
-        group_sizes.min()
-    ))
+        # Group sizes    
+        group_sizes = group_object.size()
+        log_group = 100000 # 1000 views -> 60% confidence, 100 views -> 40% confidence 
+        info(">> Calculating confidence-weighted rate for: {}.\n   Saving to: {}. Group Max /Mean / Median / Min: {} / {} / {} / {}".format(
+            group, out_column, 
+            group_sizes.max(), 
+            np.round(group_sizes.mean(), 2),
+            np.round(group_sizes.median(), 2),
+            group_sizes.min()
+        ))
 
-    # Aggregation function
-    def rate_calculation(x):
-        """Calculate the attributed rate. Scale by confidence"""
-        rate = x.sum() / float(x.count())
-        conf = np.min([1, np.log(x.count()) / log_group])
-        return rate * conf
+        # Aggregation function
+        def rate_calculation(x):
+            """Calculate the attributed rate. Scale by confidence"""
+            rate = x.sum() / float(x.count())
+            conf = np.min([1, np.log(x.count()) / log_group])
+            return rate * conf
 
-    # Perform the merge
-    out = out.merge(
-        group_object['is_attributed']. \
+        gp = group_object['is_attributed']. \
             apply(rate_calculation). \
             reset_index(). \
-            rename( 
-                index=str,
-                columns={'is_attributed': out_column}
-            )[group + [out_column]],
-        on=group, how='left'
-    )
-    
-    del group_object
-    del group_sizes        
-    gc.collect()        
+            rename(index=str, columns={'is_attributed': out_column})[group + [out_column]]
+            
+        with open(group_fpath, 'wb') as f:
+            pickle.dump(gp, f)          
+                
+        del group_object
+        del group_sizes        
+        gc.collect()        
+    else:
+        with open(group_fpath, 'rb') as f:
+            gp = pickle.load(f)
+            
+    # perform the merge
+    out = out.merge(gp, on=group, how='left')
     
     out = out[[out_column]].astype(dtype)    
     gc.collect()
@@ -80,23 +83,32 @@ def process(kind):
             continue
             
         info('loading base')
-        df = load_base(kind)
+        df = load_base('train')
         
-        binip = feather.read_dataframe(os.path.join(CACHE, '{}_binip.feather'.format(kind)))
+        binip = feather.read_dataframe(os.path.join(CACHE, '{}_binip.feather'.format('train')))
         df['binip'] = binip['binip'].values
         
         del binip
         gc.collect()
-
+        
         
         source_cond = (df.day.isin([6, 7, 9])) & df.hour.isin([4,5,9,10,13,14])
         # source_cond = (df.day.isin([9])) & df.hour.isin([4,5,9,10,13,14])
         source_df = df[source_cond]
-        target_df = df if kind == 'train' else load_base('test')
+        target_df = df
+        
+        if kind == 'test':
+            target_df = load_base('test')
+            binip = feather.read_dataframe(os.path.join(CACHE, '{}_binip.feather'.format(kind)))
+            target_df['binip'] = binip['binip'].values
+
+            del binip
+            gc.collect()
+        
         info('source: %d, target: %d' %(len(source_df), len(target_df)))        
 
         print('preparing ', out_column, datetime.now())
-        out = _prepare_x4(source_df, target_df, group, out_column, np.float32)
+        out = _prepare_x4(kind, source_df, target_df, group, out_column, np.float32)
         
         info(out[out_column].describe())
 
@@ -104,9 +116,13 @@ def process(kind):
         print('wrote ', out_fname)
 
         del out
+        del df
+        del source_df
+        del target_df
         gc.collect()
 
         print('done ', datetime.now())
 
 if __name__ == '__main__':    
-    process('train')
+    # process('train')
+    process('test')

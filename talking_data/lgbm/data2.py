@@ -17,7 +17,7 @@ from util import *
 
 def load_base(kind):
     base_fname = os.path.join(CACHE, '{}_base.feather'.format(kind))
-    info('loading base %s' % base_fname)
+    info('loading %s' % base_fname)
     df = feather.read_dataframe(base_fname)
     return df
 

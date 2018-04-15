@@ -17,7 +17,7 @@ from dataset import *
 
        
 def _prepare_x3(source_df, target_df, group, out_column, dtype):    
-    out = target_df[group + ['day']]  
+    out = target_df[group]  
 
     # Find frequency of is_attributed for each unique value in column
     freqs = {}

@@ -43,8 +43,8 @@ def run(train_df,
               'objective': 'binary',
               'metric':'auc',
               'learning_rate': 0.1,
-              'num_leaves': 31, 
-              'max_depth': -1, 
+              'num_leaves': 63, 
+              'max_depth': 5, 
               'max_bin': 255,  
               'bagging_freq': 0.8,
               'bagging_freq': 1,
@@ -115,36 +115,29 @@ def run_train(days, iterations, seed):
     trainval_df = data2.load('train')
     
     target = 'is_attributed'
-    categorical = ['app', 'device', 'os', 'channel', 'hour']
-    
-    predictors = [
-        'app', 'channel',  'device', 'os', 'hour', 
-        'count_ip_day_in_test_hh', 
-        'count_ip_day_hour',
-        'count_ip_os_hour', 
-        'count_ip_app_hour', 
-        'count_ip_device_hour',
-        'count_ip_day_app_in_test_hh',
-        'count_ip_day_device_in_test_hh',
-        'lhood_ip_channel_hour',
-        'lhood_ip_app_hour',        
-    ] 
-    
+    categorical = ['app', 'device', 'os', 'channel', 'hour', 'binip']
+        
     excluded = [
         'click_time',
-        'ip'
+        'ip',
+        'day'
     ]
     
+    # i'm not convinced yet restricting training days is good
+    train_cond = (trainval_df.day.isin(days)) & (trainval_df.hour.isin([4,5,9,10,13,14]))
+    train_df = trainval_df[train_cond]
+        
     for column in excluded:
         del trainval_df[column]
-        
+                
     gc.collect()
-        
-    # i'm not convinced yet restricting training days is good
-    train_df = trainval_df.loc[trainval_df.day.isin(days)]
-    val_dfs = None
     
+    predictors = list(sorted([c for c in trainval_df.columns if c not in ['is_attributed']]))
+        
+    val_dfs = None
+    iterations = 57
     run(train_df, val_dfs, predictors, target, categorical, iterations, seed)
+    
     
 import fire    
 if __name__ == '__main__':

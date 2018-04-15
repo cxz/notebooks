@@ -39,17 +39,23 @@ def process(kind):
         
     # Apply all the groupby transformations
     for spec in GROUPBY_AGGREGATIONS:
-        info('loading base')
-        df = load_base(kind)
+        # Name of the aggregation we're applying
+        agg_name = spec['agg_name'] if 'agg_name' in spec else spec['agg']
+
+        new_feature = '{}_{}_{}'.format('_'.join(spec['groupby']), agg_name, spec['select'])        
+        out_column = "x2_{}".format(new_feature)
+        out_fname = os.path.join(CACHE, '{}_{}.feather'.format(kind, out_column))
+        if os.path.exists(out_fname):
+            continue
+        
+        df = load_base('train')
         
         source_cond = (df.day.isin([9])) & df.hour.isin([4,5,9,10,13,14])
         source_df = df[source_cond]
+        
         target_df = df if kind == 'train' else load_base('test')
-        info('source: %d, target: %d' %(len(source_df), len(target_df)))
+        info('source: %d, target: %d' %(len(source_df), len(target_df)))        
         
-        
-        # Name of the aggregation we're applying
-        agg_name = spec['agg_name'] if 'agg_name' in spec else spec['agg']
 
         # Info
         print("Grouping by {}, and aggregating {} with {}".format(
@@ -59,22 +65,25 @@ def process(kind):
         # Unique list of features to select
         all_features = list(set(spec['groupby'] + [spec['select']]))
 
-        # Name of new feature
-        new_feature = '{}_{}_{}'.format('_'.join(spec['groupby']), agg_name, spec['select'])
-        
-        out_column = "x2_{}".format(new_feature)
-        out_fname = os.path.join(CACHE, '{}_{}.feather'.format(kind, out_column))
-        if os.path.exists(out_fname):
-            continue
+        # ...
+        group_fname = 'x2_{}'.format('_'.join(new_feature))
+        group_fpath = os.path.join(CACHE, group_fname)
+            
+        if kind == 'train':
+            print('preparing ', out_column, datetime.now())
 
-        print('preparing ', out_column, datetime.now())
-                        
-        # Perform the groupby
-        gp = source_df[all_features]. \
-            groupby(spec['groupby'])[spec['select']]. \
-            agg(spec['agg']). \
-            reset_index(). \
-            rename(index=str, columns={spec['select']: out_column})
+            # Perform the groupby
+            gp = source_df[all_features]. \
+                groupby(spec['groupby'])[spec['select']]. \
+                agg(spec['agg']). \
+                reset_index(). \
+                rename(index=str, columns={spec['select']: out_column})
+                    
+            with open(group_fpath, 'wb') as f:
+                pickle.dump(gp, f)
+        else:
+            with open(group_fpath, 'rb') as f:
+                gp = pickle.load(f)            
 
         out = target_df.merge(gp, on=spec['groupby'], how='left')
         out = out[[out_column]].astype(np.float32)
@@ -89,8 +98,6 @@ def process(kind):
 
         print('done ', datetime.now())
         
-
-
-        
 if __name__ == '__main__':
-    process('train')
+    # process('train')
+    process('test')
