@@ -18,30 +18,70 @@ from data2 import load_base
 from util import *
 from dataset import *
 
-def _prepare_count(source_df, target_df, out_column, kind):
+# important to group by day as well, so counts between
+# train & test are equivalent
+GROUP = ['ip', 'day']
+BINS = 255
+DTYPE = np.uint8
+
+def _build_bins():
+    bin_fname = os.path.join(CACHE, 'binip.pkl')
+    if os.path.exists(bin_fname):
+        with open(bin_fname, 'rb') as f:
+            bins = pickle.load(f)
+            return bins
+        
+    # build full ips from train + test_v0
+    df = load_base('train')
+    df = df.append(load_base('test_v0'))
+    assert len(df) == TEST_ROWS_V0 + TRAIN_ROWS
+        
+    group = GROUP
     helper = 'is_attributed'
-    group = ['ip']
-    gp = source_df[group + [helper]].groupby(by=group)[helper] \
+    out_column = 'binip'
+    
+    gp = df[group + [helper]].groupby(by=group)[helper] \
         .count() \
         .reset_index() \
         .rename(index=str, columns={helper: out_column})
-    count = target_df[group].merge(gp, on=group, how='left')
-    count[out_column] = count[out_column].fillna(0)
-    
-    #bins = np.linspace(0, 364778, 255)
-    
-    binip_fname = os.path.join(CACHE, 'binip.pkl')
-    if kind == 'train' and not os.path.exists(binip_fname):
-        _, bins = pd.cut(count[out_column], 255, labels=False, retbins=True)        
-        with open(binip_fname, 'wb') as f:
-            pickle.dump(bins, f)
         
-    with open(binip_fname, 'rb') as f:
-        bins = pickle.load(f)
+    count = df[group].merge(gp, on=group, how='left')
+    _, bins = pd.qcut(count[out_column], BINS, retbins=True, labels=False, duplicates='drop')
+    
+    info("==== bins:")
+    info(bins)
+    
+    with open(bin_fname, 'wb') as f:
+        pickle.dump(bins, f)
         
+    return bins
+        
+
+def _prepare_binip(bins, df, out_column, kind):
+    group = GROUP
+    helper = 'is_attributed'
+    gp = df[group + [helper]] \
+        .groupby(by=group)[helper] \
+        .count() \
+        .reset_index() \
+        .rename(index=str, columns={helper: out_column})
+        
+    count = df[group].merge(gp, on=group, how='left')
+    info(count[out_column].describe())
+    info("nans: %d" % len(count[count[out_column].isnull()]))
+    assert 0 == len(count[count[out_column].isnull()])
+    
     out = pd.cut(count[out_column], bins, labels=False)
-    out = out.astype(np.uint8).to_frame()     
-        
+    info(out.describe())
+    info("nans: %d" % len(out[out.isnull()]))
+    
+    # nans happen here for unique ips i.e. where count is 1. 
+    # merge then with first bin
+    out = out.fillna(0)
+    out = out.astype(DTYPE).to_frame() 
+
+    del count
+    del gp
     gc.collect()
     return out  
 
@@ -52,23 +92,27 @@ def process(kind):
         info('%s exists, skippping.' % out_fname)
         return
     
-    df = load_base('train') # calculate bins based on train
+    info("preparing bins")
+    bins = _build_bins()
+    gc.collect()
     
-    source_cond = (df.day == 9)  # both train/test
-    source_df = df[source_cond]
-    target_df = load_base('test') if kind == 'test' else df
+    info("reading df")
+    df = load_base(kind)
     
     info('preparing %s' % out_column)
-    out = _prepare_count(source_df, target_df, out_column, kind)
+    out = _prepare_binip(bins, df, out_column, kind)
 
     feather.write_dataframe(out, out_fname)
     print('wrote ', out_fname)
 
     del out
+    del bins
+    del df
     gc.collect()
 
     print('done ', datetime.now())
 
 if __name__ == '__main__':
-    # process('train')
+    process('train')
     process('test')
+    process('test_v0')
