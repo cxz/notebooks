@@ -6,14 +6,10 @@ import gc
 import pickle
 import logging
 import datetime
-from collections import Counter
-from datetime import datetime 
-import logging
 
 import pandas as pd
 import numpy as np
 
-from tqdm import tqdm
 
 import feather
 
@@ -21,10 +17,18 @@ from util import info
 from dataset import *
 
 def process(kind):
-    basename = {'train': kind, 'test': 'test_v0'}
-    fname = os.path.join(BASE_PATH, '{}.csv'.format(basename[kind]))
-    info('loading %s' % fname)
+    """ Convert original csv into feather.
     
+    Also split click_time into hour & day and drop click_id & attributed_time.
+    
+    """
+    out_fname = os.path.join(CACHE, '{}_base.feather'.format(kind))
+    if os.path.exists(out_fname):
+        return
+    
+    fname = os.path.join(BASE_PATH, '{}.csv'.format(kind))
+    info('loading %s' % fname)
+        
     df = pd.read_csv(fname, dtype=DTYPES, parse_dates=['click_time'])
     
     info('hour/day')
@@ -47,8 +51,7 @@ def process(kind):
     df.reset_index(drop=True, inplace=True)
     
     info(df.info())
-
-    out_fname = os.path.join(CACHE, '{}_base.feather'.format(kind))
+    
     info("writing %s" % out_fname)
     feather.write_dataframe(df, out_fname)
              
@@ -57,4 +60,5 @@ def process(kind):
 
 if __name__ == '__main__':
     process('train')
+    process('test_v0')
     process('test')
