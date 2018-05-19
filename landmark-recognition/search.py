@@ -5,7 +5,7 @@ https://github.com/facebookresearch/faiss/wiki/Indexing-1G-vectors
 https://github.com/facebookresearch/faiss/wiki/Indexing-1M-vectors
 
 nvidia-docker run -ti --name retr-faiss -v /opt/kaggle/landmark-retrieval:/landmark faiss bash
-PYTHONPATH=/opt/faiss python build_index.py
+PYTHONPATH=/opt/faiss python search.py
 
 """
 import time
@@ -49,7 +49,7 @@ def search(k_nearest=100):
     x_queries = np.load('reco_qvecs.npy').T
 
     nearest = np.zeros((x_queries.shape[0], k_nearest), dtype=np.uint32)
-    scores = np.zeros((x_queries.shape[0], k_nearest), dtype=np.uint32)
+    scores = np.zeros((x_queries.shape[0], k_nearest), dtype=np.float32)
 
     chunk_size = 1000
     for chunk_idx, chunk in enumerate(chunks(range(x_queries.shape[0]), chunk_size)):
