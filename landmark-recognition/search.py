@@ -48,7 +48,7 @@ def search(k_nearest=100):
 
     x_queries = np.load('reco_qvecs.npy').T
 
-    nearest = np.zeros((x_queries.shape[0], k_nearest), dtype=np.uint32)
+    nearest = np.zeros((x_queries.shape[0], k_nearest), dtype=np.int64)
     scores = np.zeros((x_queries.shape[0], k_nearest), dtype=np.float32)
 
     chunk_size = 1000
