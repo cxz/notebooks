@@ -35,9 +35,9 @@ def htime(c):
     return '{}s'.format(seconds)
 
 
-def build_index(index_name):
+def build_index(fname_in, fname_out, index_name):
     start = time.time()
-    vecs = np.load("reco_vecs.npy")
+    vecs = np.load(fname_in)
     vecs_t = vecs.T
     print('vecs:', vecs_t.shape, vecs.dtype)
 
@@ -55,9 +55,10 @@ def build_index(index_name):
         x = vecs_t[chunk, :]
         index.add(x)
 
-    faiss.write_index(index, "reco.index")
+    faiss.write_index(index, fname_out)
     print('done: ', htime(time.time() - start))
 
 
 if __name__ == '__main__':
-    build_index('IVF4096,Flat')
+    # build_index('reco_vecs.npy', 'reco.index', 'IVF4096,Flat')
+    build_index('retr_vecs.npy', 'retr.index', 'IVF4096,Flat')
