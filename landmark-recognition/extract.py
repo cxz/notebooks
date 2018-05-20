@@ -22,6 +22,46 @@ from cirtorch.utils.whiten import whitenlearn, whitenapply
 from cirtorch.utils.evaluate import compute_map_and_print
 from cirtorch.utils.general import get_data_root, htime
 
+
+def landmark_retrieval_dataset():
+    base_path = '/kaggle1/landmark-retrieval'
+    train_ids = pd.read_csv(os.path.join(base_path, 'index.csv'), usecols=['id']).id.values
+
+    # base path where images are stored
+    base_train = '/opt/kaggle/landmark-retrieval/data-train'
+
+    # database images
+    images = [os.path.join(base_train, image_id[:3], '%s.jpg' % image_id) for image_id in train_ids]
+    images = [fpath for fpath in images if os.path.exists(fpath)]
+
+    print('== landmark retrieval dataset ===')
+    print('database:', len(train_ids), len(images))
+    return images, []
+
+
+def landmark_recognition_dataset():
+    base_path = '/kaggle1/landmark-recognition'
+    train_ids = pd.read_csv(os.path.join(base_path, 'train.csv'), usecols=['id']).id.values
+    test_ids = pd.read_csv(os.path.join(base_path, 'test.csv'), usecols=['id']).id.values
+
+    # base path where images are stored
+    base_train = '/opt/kaggle/landmark-recognition/data/train-copy'
+    base_test = os.path.join(base_path, 'test')
+
+    # database images
+    images = [os.path.join(base_train, image_id[:3], '%s.jpg' % image_id) for image_id in train_ids]
+    images = [fpath for fpath in images if os.path.exists(fpath)]
+
+    # query images
+    qimages = [os.path.join(base_test, image_id[:3], '%s.jpg' % image_id) for image_id in test_ids]
+    qimages = [fpath for fpath in qimages if os.path.exists(fpath)]
+
+    print('== landmark recognition dataset ===')
+    print('database:', len(train_ids), len(images))
+    print('query:', len(test_ids), len(qimages))
+    return images, qimages
+
+
 def landmark_recognition_dataset():
     base_path = '/kaggle1/landmark-recognition'
     train_ids = pd.read_csv(os.path.join(base_path, 'train.csv'), usecols=['id']).id.values
@@ -161,7 +201,6 @@ def main():
     else:
         Lw = None
 
-    # evaluate on test datasets
     datasets = args.datasets.split(',')
     for dataset in datasets: 
         start = time.time()
@@ -170,6 +209,11 @@ def main():
 
         if dataset == 'reco':
             images, qimages = landmark_recognition_dataset()
+            bbxs = [None for x in qimages]
+
+        elif dataset == 'retr':
+            images, _ = landmark_retrieval_dataset()
+            qimages = []
             bbxs = [None for x in qimages]
 
         else:
@@ -188,21 +232,20 @@ def main():
         vecs = vecs.numpy()
         print('>> saving')
         np.save('{}_vecs.npy'.format(dataset), vecs)
-        
-        print('>> {}: query images...'.format(dataset))
-        qvecs = extract_vectors(net, qimages, args.image_size, transform, bbxs=bbxs, ms=ms, msp=msp)
-        qvecs = qvecs.numpy()
-        np.save('{}_qvecs.npy'.format(dataset), qvecs)
-        
-            
+
+        if len(qimages) > 0:
+            print('>> {}: query images...'.format(dataset))
+            qvecs = extract_vectors(net, qimages, args.image_size, transform, bbxs=bbxs, ms=ms, msp=msp)
+            qvecs = qvecs.numpy()
+            np.save('{}_qvecs.npy'.format(dataset), qvecs)
+
         if Lw is not None:
             # whiten the vectors
             vecs_lw  = whitenapply(vecs, Lw['m'], Lw['P'])
             qvecs_lw = whitenapply(qvecs, Lw['m'], Lw['P'])
             
             # TODO
-            
-        
+
         print('>> {}: elapsed time: {}'.format(dataset, htime(time.time()-start)))
 
 
