@@ -212,7 +212,7 @@ def reco_score():
     rows = []
     debug = []
     ids = pd.read_csv('/opt/kaggle/landmark-recognition/input/sample_submission.csv', usecols=['id']).id.values
-    for image_id in qimage_ids:
+    for image_id in ids:
         if image_id in result:
             landmark_id, inliers, distance = result[image_id]
             score = scores[image_id]
