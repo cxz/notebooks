@@ -40,14 +40,15 @@ def chunks(l, n):
         yield l[i:i+n]
 
 
-def search(dataset, k_nearest=100):
+def search(dataset, query_ds, out_prefix='', k_nearest=1000, nprobe=10):
     start = time.time()
 
     index = faiss.read_index('%s.index' % dataset)
+    index.nprobe = nprobe
     print('index loaded')
 
     # same queries for both reco & retr datasets
-    x_queries = np.load('reco_qvecs.npy').T
+    x_queries = np.load(query_ds).T
 
     nearest = np.zeros((x_queries.shape[0], k_nearest), dtype=np.int64)
     scores = np.zeros((x_queries.shape[0], k_nearest), dtype=np.float32)
@@ -60,12 +61,14 @@ def search(dataset, k_nearest=100):
         nearest[chunk, :] = I
         scores[chunk, :] = D
 
-    np.save("%s_nearest.npy" % dataset, scores)
-    np.save("%s_nearest_idx.npy" % dataset, nearest)
+    np.save("%s%s_nearest.npy" % (dataset, out_prefix), scores)
+    np.save("%s%s_nearest_idx.npy" % (dataset, out_prefix), nearest)
 
     print('done: ', htime(time.time() - start))
 
 
 if __name__ == '__main__':
-    # search('reco')
-    search('retr')
+    # search('reco', 'reco_qvecs.npy', 'reco')
+    # search('retr', 'reco_qvecs.npy', 'retr')
+    # search('reco', 'reco_qvecs_val.npy', '_val')
+    search('reco', 'reco_qvecs_val_junk.npy', '_val_junk')
